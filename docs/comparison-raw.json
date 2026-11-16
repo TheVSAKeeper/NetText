@@ -1,0 +1,6187 @@
+{
+  "generatedAt": "2026-11-17T02:31:12.1601052+03:00",
+  "iterations": 30,
+  "e2eIterations": 5,
+  "environment": {
+    "os": "Майкрософт Windows 11 Pro (10.0.26200, 64-разрядная)",
+    "dotnetSdk": "11.0.100",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "rustTextBranch": "perf/bench-probes",
+    "rustTextCommit": "a97680f",
+    "rustTextDirty": false,
+    "netTextBranch": "main",
+    "netTextCommit": "2956022",
+    "netTextDirty": false,
+    "scintillaVersion": "5.6.9",
+    "lexillaVersion": "5.5.5",
+    "binarySha256": {
+      "NetText.exe": "2222b016ee6cb5ced3cd1bb18db2e5c159bccd3ef4512fb2424b9271e5e4b97b",
+      "Scintilla.dll": "15e48bd363335c63be69cc0709e5275e301e122f44ad18390f4d16047657dbc9",
+      "Lexilla.dll": "8b320c0512d97bf14370b0ff310b12397d8b29b923c23c4c92c790f699578f69",
+      "rusttext.exe": "e7aa550d53d5c5841f5b303db205e5525bbe7c554bd18bd6956e6d5949daab2f",
+      "core_bench.exe": "1c48eee5aa2a0093ff16d0af47f17de344749b2c568c49ea3dcd32551154b65f"
+    }
+  },
+  "codeStats": {
+    "netSrcFiles": 24,
+    "netSrcLines": 11353,
+    "netTestFiles": 4,
+    "netTestLines": 911,
+    "rustSrcFiles": 35,
+    "rustSrcLines": 9279,
+    "rustTestFiles": 17,
+    "rustTestLines": 1971,
+    "rustSizeMiB": 28.25,
+    "netExeMiB": 5.92,
+    "netScintillaMiB": 1.08,
+    "netLexillaMiB": 1.35,
+    "netTotalMiB": 8.35
+  },
+  "dependencies": {
+    "rustDirectRuntime": 12,
+    "rustDirectBuild": 0,
+    "rustWinTransitiveRuntime": 469,
+    "rustWinBuildDirect": 15,
+    "rustWinGraphTotal": 492,
+    "rustCargoLockAllTargets": 828,
+    "netNugetPackages": 0,
+    "netPublishedFiles": [
+      "NetText.exe",
+      "Scintilla.dll",
+      "Lexilla.dll"
+    ]
+  },
+  "buildsAndTests": {
+    "netTestSec": 2.29,
+    "netTestPassed": 49,
+    "rustTestSec": 1.45,
+    "rustBinTestPassed": 96,
+    "rustTotalTestPassed": 125,
+    "netIncrementalBuildSec": 4.08,
+    "rustIncrementalBuildSec": 9.3,
+    "netCleanBuildSec": 3.84,
+    "rustCleanBuildSec": 107.37
+  },
+  "startupSummary": [
+    {
+      "Case": "RustText empty",
+      "Runs": 30,
+      "WindowMsText": "303 / 600",
+      "FirstFrameText": "238 / 278",
+      "ReadyMsText": "238 / 278",
+      "WorkingSetText": "81.81 / 82.83",
+      "PeakWsText": "81.81 / 82.83",
+      "PrivateText": "95.92 / 96.96"
+    },
+    {
+      "Case": "NetText empty",
+      "Runs": 30,
+      "WindowMsText": "126 / 297",
+      "FirstFrameText": "31 / 39",
+      "ReadyMsText": "31 / 39",
+      "WorkingSetText": "62.55 / 62.82",
+      "PeakWsText": "62.55 / 62.83",
+      "PrivateText": "66.64 / 67.67"
+    },
+    {
+      "Case": "RustText 40MB .txt",
+      "Runs": 30,
+      "WindowMsText": "240 / 426",
+      "FirstFrameText": "223 / 267",
+      "ReadyMsText": "424 / 472",
+      "WorkingSetText": "191.45 / 192.12",
+      "PeakWsText": "209.23 / 209.94",
+      "PrivateText": "205.77 / 206.98"
+    },
+    {
+      "Case": "NetText 40MB .txt",
+      "Runs": 30,
+      "WindowMsText": "27 / 232",
+      "FirstFrameText": "19 / 24",
+      "ReadyMsText": "199 / 232",
+      "WorkingSetText": "145.34 / 145.70",
+      "PeakWsText": "153.06 / 154.35",
+      "PrivateText": "149.02 / 149.87"
+    },
+    {
+      "Case": "RustText 40MB .json",
+      "Runs": 30,
+      "WindowMsText": "272 / 384",
+      "FirstFrameText": "238 / 311",
+      "ReadyMsText": "442 / 523",
+      "WorkingSetText": "234.81 / 235.49",
+      "PeakWsText": "260.42 / 260.96",
+      "PrivateText": "274.80 / 275.66"
+    },
+    {
+      "Case": "NetText 40MB .json",
+      "Runs": 30,
+      "WindowMsText": "30 / 91",
+      "FirstFrameText": "22 / 27",
+      "ReadyMsText": "527 / 671",
+      "WorkingSetText": "141.56 / 141.90",
+      "PeakWsText": "148.77 / 149.22",
+      "PrivateText": "145.25 / 146.03"
+    },
+    {
+      "Case": "RustText 10GiB .txt",
+      "Runs": 30,
+      "WindowMsText": "274 / 444",
+      "FirstFrameText": "256 / 294",
+      "ReadyMsText": "262 / 299",
+      "WorkingSetText": "87.28 / 88.06",
+      "PeakWsText": "87.28 / 88.06",
+      "PrivateText": "100.87 / 102.08"
+    },
+    {
+      "Case": "NetText 10GiB .txt",
+      "Runs": 30,
+      "WindowMsText": "36 / 266",
+      "FirstFrameText": "23 / 28",
+      "ReadyMsText": "34 / 50",
+      "WorkingSetText": "33.17 / 33.35",
+      "PeakWsText": "33.17 / 33.35",
+      "PrivateText": "10.77 / 11.01"
+    },
+    {
+      "Case": "RustText 20GiB .txt",
+      "Runs": 30,
+      "WindowMsText": "225 / 247",
+      "FirstFrameText": "221 / 239",
+      "ReadyMsText": "225 / 243",
+      "WorkingSetText": "87.31 / 87.79",
+      "PeakWsText": "87.31 / 87.79",
+      "PrivateText": "100.94 / 101.39"
+    },
+    {
+      "Case": "NetText 20GiB .txt",
+      "Runs": 30,
+      "WindowMsText": "24 / 32",
+      "FirstFrameText": "19 / 21",
+      "ReadyMsText": "27 / 35",
+      "WorkingSetText": "33.20 / 33.39",
+      "PeakWsText": "33.20 / 33.39",
+      "PrivateText": "10.83 / 11.02"
+    }
+  ],
+  "e2eSummary": [
+    {
+      "Case": "RustText 10GiB E2E",
+      "Runs": 5,
+      "FirstFrameMs": "212 / 227",
+      "IndexReadyMs": "5210 / 6163",
+      "Jump50Ms": "6 / 10",
+      "JumpEofMs": "12 / 13",
+      "ScrollPrevMs": "11 / 12",
+      "SearchEofMs": "21644 / 23047",
+      "CancelSearchMs": "0 / 0",
+      "MemStartPriv": "97.05 / 97.60",
+      "MemIndexPriv": "100.91 / 100.97",
+      "MemOpsPriv": "100.15 / 100.35",
+      "MemOpsWs": "88.25 / 88.47",
+      "MemOpsPeakWs": "92.08 / 92.45"
+    },
+    {
+      "Case": "NetText 10GiB E2E",
+      "Runs": 5,
+      "FirstFrameMs": "25 / 39",
+      "IndexReadyMs": "1975 / 2122",
+      "Jump50Ms": "3 / 4",
+      "JumpEofMs": "2 / 8",
+      "ScrollPrevMs": "2 / 8",
+      "SearchEofMs": "2475 / 2987",
+      "CancelSearchMs": "0 / 0",
+      "MemStartPriv": "10.64 / 10.87",
+      "MemIndexPriv": "17.59 / 17.66",
+      "MemOpsPriv": "25.67 / 25.79",
+      "MemOpsWs": "48.75 / 48.88",
+      "MemOpsPeakWs": "48.75 / 48.88"
+    },
+    {
+      "Case": "RustText Mixed 40MB+10GiB",
+      "Runs": 5,
+      "FirstFrameMs": "424 / 430",
+      "IndexReadyMs": "6337 / 6594",
+      "Jump50Ms": "10 / 13",
+      "JumpEofMs": "12 / 12",
+      "ScrollPrevMs": "13 / 16",
+      "SearchEofMs": "23144 / 24992",
+      "CancelSearchMs": "0 / 0",
+      "MemStartPriv": "204.97 / 206.29",
+      "MemIndexPriv": "205.65 / 206.63",
+      "MemOpsPriv": "206.61 / 207.17",
+      "MemOpsWs": "194.16 / 194.59",
+      "MemOpsPeakWs": "207.74 / 208.93"
+    },
+    {
+      "Case": "NetText Mixed 40MB+10GiB",
+      "Runs": 5,
+      "FirstFrameMs": "70 / 75",
+      "IndexReadyMs": "2006 / 2018",
+      "Jump50Ms": "3 / 3",
+      "JumpEofMs": "2 / 2",
+      "ScrollPrevMs": "6 / 8",
+      "SearchEofMs": "2468 / 2501",
+      "CancelSearchMs": "0 / 0",
+      "MemStartPriv": "96.45 / 97.03",
+      "MemIndexPriv": "100.62 / 100.71",
+      "MemOpsPriv": "108.79 / 108.95",
+      "MemOpsWs": "133.19 / 133.27",
+      "MemOpsPeakWs": "152.93 / 153.08"
+    },
+    {
+      "Case": "RustText 20GiB E2E",
+      "Runs": 5,
+      "FirstFrameMs": "233 / 259",
+      "IndexReadyMs": "12662 / 13084",
+      "Jump50Ms": "6 / 13",
+      "JumpEofMs": "12 / 14",
+      "ScrollPrevMs": "13 / 13",
+      "SearchEofMs": "55312 / 65628",
+      "CancelSearchMs": "0 / 0",
+      "MemStartPriv": "96.69 / 97.88",
+      "MemIndexPriv": "100.11 / 101.06",
+      "MemOpsPriv": "99.76 / 100.15",
+      "MemOpsWs": "88.11 / 88.71",
+      "MemOpsPeakWs": "90.18 / 90.61"
+    },
+    {
+      "Case": "NetText 20GiB E2E",
+      "Runs": 5,
+      "FirstFrameMs": "31 / 38",
+      "IndexReadyMs": "4780 / 6127",
+      "Jump50Ms": "4 / 5",
+      "JumpEofMs": "3 / 8",
+      "ScrollPrevMs": "4 / 6",
+      "SearchEofMs": "6334 / 7469",
+      "CancelSearchMs": "0 / 1",
+      "MemStartPriv": "10.40 / 10.60",
+      "MemIndexPriv": "17.73 / 18.10",
+      "MemOpsPriv": "32.77 / 33.45",
+      "MemOpsWs": "55.95 / 55.98",
+      "MemOpsPeakWs": "55.96 / 56.51"
+    }
+  ],
+  "coreBench": {
+    "netText": [
+      "LineIndex(512MiB): 77.9 ms (6.42 GiB/s), lines=6391297, alloc=0.25 MiB",
+      "LogSearchLiteralMiss(512MiB): 102.8 ms (4979.3 MiB/s), alloc=0.00 MiB",
+      "LogSearchRegexMiss(512MiB): 104.2 ms (4911.9 MiB/s), alloc=0.00 MiB",
+      "EditorSearch(40MiB): 76.8 ms, alloc=0.01 MiB, hits=450000",
+      "JsonFormat(40MiB): 320.1 ms, ok=True, outLen=44100023, alloc=168.62 MiB",
+      "JsonFormatUtf8(40MiB): 244.6 ms, ok=True, outLen=44100023, alloc=42.06 MiB",
+      "JsonFormatUtf8Native(40MiB): 224.4 ms, ok=True, outLen=44100023, alloc=0.00 MiB",
+      "LogJumpAndScroll(512MiB): 0.87 ms (50%=60 rows, EOF=60 rows, next=60 rows)",
+      "LogSearchCancel: 0.50 ms",
+      "EditorReplaceAll(40MiB): 104.3 ms, count=450000",
+      "EditorSearchUtf8(40MiB): 13.5 ms, alloc=0.00 MiB, hits=450000",
+      "EditorReplaceAllUtf8(40MiB): 9.1 ms, alloc=0.00 MiB, count=450000"
+    ],
+    "rustText": [
+      "LineIndex(512MiB): 309.6 ms (1.62 GiB/s), lines=6391297",
+      "LogSearchLiteralMiss(512MiB): 1076.8 ms (475.5 MiB/s)",
+      "LogSearchRegexMiss(512MiB): 1415.8 ms (361.6 MiB/s)",
+      "EditorSearch(40MiB): 55.9 ms, hits=450000",
+      "JsonFormat(40MiB): 74.2 ms, ok=True, outLen=44100023",
+      "LogJumpAndScroll(512MiB): 0.29 ms (50%=60 rows, EOF=60 rows, next=60 rows)",
+      "LogSearchCancel: 0.10 ms",
+      "EditorReplaceAll(40MiB): 41.6 ms, count=450000"
+    ]
+  },
+  "rawStartupRuns": [
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 284,
+      "WorkingSetMiB": 82.02,
+      "PeakWorkingSetMiB": 82.02,
+      "PrivateMiB": 96.0,
+      "Metrics": {
+        "window_visible_ms": 277.0,
+        "first_frame_presented_ms": 303.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 42,
+      "WorkingSetMiB": 62.55,
+      "PeakWorkingSetMiB": 62.55,
+      "PrivateMiB": 66.05,
+      "Metrics": {
+        "window_visible_ms": 27.0,
+        "first_frame_presented_ms": 31.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 274,
+      "WorkingSetMiB": 82.77,
+      "PeakWorkingSetMiB": 82.77,
+      "PrivateMiB": 97.53,
+      "Metrics": {
+        "window_visible_ms": 256.0,
+        "first_frame_presented_ms": 269.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 222,
+      "WorkingSetMiB": 62.4,
+      "PeakWorkingSetMiB": 62.41,
+      "PrivateMiB": 66.62,
+      "Metrics": {
+        "window_visible_ms": 27.0,
+        "first_frame_presented_ms": 32.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 302,
+      "WorkingSetMiB": 81.73,
+      "PeakWorkingSetMiB": 81.73,
+      "PrivateMiB": 95.54,
+      "Metrics": {
+        "window_visible_ms": 234.0,
+        "first_frame_presented_ms": 251.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 40,
+      "WorkingSetMiB": 62.5,
+      "PeakWorkingSetMiB": 62.5,
+      "PrivateMiB": 66.47,
+      "Metrics": {
+        "window_visible_ms": 25.0,
+        "first_frame_presented_ms": 30.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 354,
+      "WorkingSetMiB": 82.0,
+      "PeakWorkingSetMiB": 82.0,
+      "PrivateMiB": 96.95,
+      "Metrics": {
+        "window_visible_ms": 200.0,
+        "first_frame_presented_ms": 210.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 56,
+      "WorkingSetMiB": 62.46,
+      "PeakWorkingSetMiB": 62.47,
+      "PrivateMiB": 66.63,
+      "Metrics": {
+        "window_visible_ms": 34.0,
+        "first_frame_presented_ms": 39.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 426,
+      "WorkingSetMiB": 81.95,
+      "PeakWorkingSetMiB": 81.95,
+      "PrivateMiB": 96.96,
+      "Metrics": {
+        "window_visible_ms": 224.0,
+        "first_frame_presented_ms": 237.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 306,
+      "WorkingSetMiB": 62.65,
+      "PeakWorkingSetMiB": 62.65,
+      "PrivateMiB": 67.65,
+      "Metrics": {
+        "window_visible_ms": 43.0,
+        "first_frame_presented_ms": 48.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 304,
+      "WorkingSetMiB": 82.84,
+      "PeakWorkingSetMiB": 82.84,
+      "PrivateMiB": 96.92,
+      "Metrics": {
+        "window_visible_ms": 218.0,
+        "first_frame_presented_ms": 230.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 195,
+      "WorkingSetMiB": 62.33,
+      "PeakWorkingSetMiB": 62.33,
+      "PrivateMiB": 66.51,
+      "Metrics": {
+        "window_visible_ms": 21.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 552,
+      "WorkingSetMiB": 81.91,
+      "PeakWorkingSetMiB": 81.91,
+      "PrivateMiB": 95.9,
+      "Metrics": {
+        "window_visible_ms": 249.0,
+        "first_frame_presented_ms": 262.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 131,
+      "WorkingSetMiB": 62.5,
+      "PeakWorkingSetMiB": 62.51,
+      "PrivateMiB": 66.8,
+      "Metrics": {
+        "window_visible_ms": 25.0,
+        "first_frame_presented_ms": 30.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 307,
+      "WorkingSetMiB": 81.83,
+      "PeakWorkingSetMiB": 81.83,
+      "PrivateMiB": 95.91,
+      "Metrics": {
+        "window_visible_ms": 212.0,
+        "first_frame_presented_ms": 224.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 167,
+      "WorkingSetMiB": 62.56,
+      "PeakWorkingSetMiB": 62.57,
+      "PrivateMiB": 66.79,
+      "Metrics": {
+        "window_visible_ms": 22.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 275,
+      "WorkingSetMiB": 80.3,
+      "PeakWorkingSetMiB": 80.3,
+      "PrivateMiB": 95.41,
+      "Metrics": {
+        "window_visible_ms": 218.0,
+        "first_frame_presented_ms": 231.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 52,
+      "WorkingSetMiB": 62.38,
+      "PeakWorkingSetMiB": 62.38,
+      "PrivateMiB": 66.58,
+      "Metrics": {
+        "window_visible_ms": 32.0,
+        "first_frame_presented_ms": 37.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 345,
+      "WorkingSetMiB": 82.34,
+      "PeakWorkingSetMiB": 82.34,
+      "PrivateMiB": 96.07,
+      "Metrics": {
+        "window_visible_ms": 222.0,
+        "first_frame_presented_ms": 235.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 257,
+      "WorkingSetMiB": 62.9,
+      "PeakWorkingSetMiB": 62.91,
+      "PrivateMiB": 66.62,
+      "Metrics": {
+        "window_visible_ms": 22.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 241,
+      "WorkingSetMiB": 82.06,
+      "PeakWorkingSetMiB": 82.06,
+      "PrivateMiB": 96.28,
+      "Metrics": {
+        "window_visible_ms": 225.0,
+        "first_frame_presented_ms": 236.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 57,
+      "WorkingSetMiB": 62.45,
+      "PeakWorkingSetMiB": 62.45,
+      "PrivateMiB": 66.85,
+      "Metrics": {
+        "window_visible_ms": 25.0,
+        "first_frame_presented_ms": 30.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 254,
+      "WorkingSetMiB": 82.81,
+      "PeakWorkingSetMiB": 82.81,
+      "PrivateMiB": 96.93,
+      "Metrics": {
+        "window_visible_ms": 240.0,
+        "first_frame_presented_ms": 251.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 217,
+      "WorkingSetMiB": 62.42,
+      "PeakWorkingSetMiB": 62.43,
+      "PrivateMiB": 66.28,
+      "Metrics": {
+        "window_visible_ms": 21.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 258,
+      "WorkingSetMiB": 80.76,
+      "PeakWorkingSetMiB": 80.76,
+      "PrivateMiB": 95.02,
+      "Metrics": {
+        "window_visible_ms": 210.0,
+        "first_frame_presented_ms": 220.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 46,
+      "WorkingSetMiB": 62.9,
+      "PeakWorkingSetMiB": 62.91,
+      "PrivateMiB": 66.79,
+      "Metrics": {
+        "window_visible_ms": 23.0,
+        "first_frame_presented_ms": 26.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 639,
+      "WorkingSetMiB": 81.79,
+      "PeakWorkingSetMiB": 81.79,
+      "PrivateMiB": 96.1,
+      "Metrics": {
+        "window_visible_ms": 240.0,
+        "first_frame_presented_ms": 250.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 61,
+      "WorkingSetMiB": 62.73,
+      "PeakWorkingSetMiB": 62.73,
+      "PrivateMiB": 67.22,
+      "Metrics": {
+        "window_visible_ms": 23.0,
+        "first_frame_presented_ms": 28.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 683,
+      "WorkingSetMiB": 81.91,
+      "PeakWorkingSetMiB": 81.91,
+      "PrivateMiB": 95.92,
+      "Metrics": {
+        "window_visible_ms": 217.0,
+        "first_frame_presented_ms": 229.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 62.47,
+      "PeakWorkingSetMiB": 62.48,
+      "PrivateMiB": 66.46,
+      "Metrics": {
+        "window_visible_ms": 27.0,
+        "first_frame_presented_ms": 32.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 328,
+      "WorkingSetMiB": 81.54,
+      "PeakWorkingSetMiB": 81.54,
+      "PrivateMiB": 95.59,
+      "Metrics": {
+        "window_visible_ms": 225.0,
+        "first_frame_presented_ms": 235.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 124,
+      "WorkingSetMiB": 62.67,
+      "PeakWorkingSetMiB": 62.67,
+      "PrivateMiB": 66.91,
+      "Metrics": {
+        "window_visible_ms": 24.0,
+        "first_frame_presented_ms": 28.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 319,
+      "WorkingSetMiB": 81.54,
+      "PeakWorkingSetMiB": 81.54,
+      "PrivateMiB": 95.6,
+      "Metrics": {
+        "window_visible_ms": 239.0,
+        "first_frame_presented_ms": 255.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 278,
+      "WorkingSetMiB": 62.62,
+      "PeakWorkingSetMiB": 62.62,
+      "PrivateMiB": 67.69,
+      "Metrics": {
+        "window_visible_ms": 20.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 231,
+      "WorkingSetMiB": 80.82,
+      "PeakWorkingSetMiB": 80.82,
+      "PrivateMiB": 96.63,
+      "Metrics": {
+        "window_visible_ms": 225.0,
+        "first_frame_presented_ms": 235.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 250,
+      "WorkingSetMiB": 62.61,
+      "PeakWorkingSetMiB": 62.61,
+      "PrivateMiB": 67.78,
+      "Metrics": {
+        "window_visible_ms": 27.0,
+        "first_frame_presented_ms": 32.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 321,
+      "WorkingSetMiB": 82.11,
+      "PeakWorkingSetMiB": 82.11,
+      "PrivateMiB": 96.71,
+      "Metrics": {
+        "window_visible_ms": 212.0,
+        "first_frame_presented_ms": 222.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 367,
+      "WorkingSetMiB": 62.5,
+      "PeakWorkingSetMiB": 62.51,
+      "PrivateMiB": 66.34,
+      "Metrics": {
+        "window_visible_ms": 23.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 541,
+      "WorkingSetMiB": 80.4,
+      "PeakWorkingSetMiB": 80.4,
+      "PrivateMiB": 93.86,
+      "Metrics": {
+        "window_visible_ms": 250.0,
+        "first_frame_presented_ms": 262.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 42,
+      "WorkingSetMiB": 62.55,
+      "PeakWorkingSetMiB": 62.55,
+      "PrivateMiB": 67.54,
+      "Metrics": {
+        "window_visible_ms": 25.0,
+        "first_frame_presented_ms": 30.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 238,
+      "WorkingSetMiB": 80.32,
+      "PeakWorkingSetMiB": 80.32,
+      "PrivateMiB": 94.27,
+      "Metrics": {
+        "window_visible_ms": 223.0,
+        "first_frame_presented_ms": 234.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 73,
+      "WorkingSetMiB": 62.66,
+      "PeakWorkingSetMiB": 62.66,
+      "PrivateMiB": 67.27,
+      "Metrics": {
+        "window_visible_ms": 29.0,
+        "first_frame_presented_ms": 34.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 306,
+      "WorkingSetMiB": 81.45,
+      "PeakWorkingSetMiB": 81.45,
+      "PrivateMiB": 95.6,
+      "Metrics": {
+        "window_visible_ms": 238.0,
+        "first_frame_presented_ms": 251.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 226,
+      "WorkingSetMiB": 62.54,
+      "PeakWorkingSetMiB": 62.55,
+      "PrivateMiB": 66.09,
+      "Metrics": {
+        "window_visible_ms": 26.0,
+        "first_frame_presented_ms": 31.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 254,
+      "WorkingSetMiB": 81.61,
+      "PeakWorkingSetMiB": 81.61,
+      "PrivateMiB": 95.53,
+      "Metrics": {
+        "window_visible_ms": 233.0,
+        "first_frame_presented_ms": 243.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 38,
+      "WorkingSetMiB": 62.55,
+      "PeakWorkingSetMiB": 62.55,
+      "PrivateMiB": 65.94,
+      "Metrics": {
+        "window_visible_ms": 29.0,
+        "first_frame_presented_ms": 34.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 242,
+      "WorkingSetMiB": 81.79,
+      "PeakWorkingSetMiB": 81.79,
+      "PrivateMiB": 95.51,
+      "Metrics": {
+        "window_visible_ms": 221.0,
+        "first_frame_presented_ms": 240.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 168,
+      "WorkingSetMiB": 62.73,
+      "PeakWorkingSetMiB": 62.73,
+      "PrivateMiB": 67.63,
+      "Metrics": {
+        "window_visible_ms": 27.0,
+        "first_frame_presented_ms": 32.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 409,
+      "WorkingSetMiB": 82.88,
+      "PeakWorkingSetMiB": 82.88,
+      "PrivateMiB": 96.57,
+      "Metrics": {
+        "window_visible_ms": 203.0,
+        "first_frame_presented_ms": 215.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 38,
+      "WorkingSetMiB": 62.59,
+      "PeakWorkingSetMiB": 62.6,
+      "PrivateMiB": 66.72,
+      "Metrics": {
+        "window_visible_ms": 28.0,
+        "first_frame_presented_ms": 33.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 306,
+      "WorkingSetMiB": 81.76,
+      "PeakWorkingSetMiB": 81.76,
+      "PrivateMiB": 95.57,
+      "Metrics": {
+        "window_visible_ms": 249.0,
+        "first_frame_presented_ms": 260.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 129,
+      "WorkingSetMiB": 62.43,
+      "PeakWorkingSetMiB": 62.43,
+      "PrivateMiB": 65.83,
+      "Metrics": {
+        "window_visible_ms": 28.0,
+        "first_frame_presented_ms": 33.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 288,
+      "WorkingSetMiB": 81.57,
+      "PeakWorkingSetMiB": 81.57,
+      "PrivateMiB": 94.55,
+      "Metrics": {
+        "window_visible_ms": 274.0,
+        "first_frame_presented_ms": 286.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 62.34,
+      "PeakWorkingSetMiB": 62.34,
+      "PrivateMiB": 66.59,
+      "Metrics": {
+        "window_visible_ms": 28.0,
+        "first_frame_presented_ms": 33.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 275,
+      "WorkingSetMiB": 80.3,
+      "PeakWorkingSetMiB": 80.3,
+      "PrivateMiB": 95.18,
+      "Metrics": {
+        "window_visible_ms": 226.0,
+        "first_frame_presented_ms": 237.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 134,
+      "WorkingSetMiB": 62.61,
+      "PeakWorkingSetMiB": 62.61,
+      "PrivateMiB": 66.16,
+      "Metrics": {
+        "window_visible_ms": 24.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 254,
+      "WorkingSetMiB": 82.16,
+      "PeakWorkingSetMiB": 82.16,
+      "PrivateMiB": 96.21,
+      "Metrics": {
+        "window_visible_ms": 246.0,
+        "first_frame_presented_ms": 258.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 286,
+      "WorkingSetMiB": 62.54,
+      "PeakWorkingSetMiB": 62.54,
+      "PrivateMiB": 66.88,
+      "Metrics": {
+        "window_visible_ms": 29.0,
+        "first_frame_presented_ms": 34.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "empty",
+      "Case": "RustText empty",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 285,
+      "WorkingSetMiB": 82.05,
+      "PeakWorkingSetMiB": 82.05,
+      "PrivateMiB": 96.23,
+      "Metrics": {
+        "window_visible_ms": 249.0,
+        "first_frame_presented_ms": 265.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "empty",
+      "Case": "NetText empty",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 53,
+      "WorkingSetMiB": 62.47,
+      "PeakWorkingSetMiB": 62.48,
+      "PrivateMiB": 66.64,
+      "Metrics": {
+        "window_visible_ms": 33.0,
+        "first_frame_presented_ms": 39.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 322,
+      "WorkingSetMiB": 190.93,
+      "PeakWorkingSetMiB": 207.36,
+      "PrivateMiB": 204.98,
+      "Metrics": {
+        "document_ready_ms": 471.0,
+        "window_visible_ms": 257.0,
+        "editor_ready_ms": 471.0,
+        "first_frame_presented_ms": 269.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 332,
+      "WorkingSetMiB": 145.37,
+      "PeakWorkingSetMiB": 152.97,
+      "PrivateMiB": 149.25,
+      "Metrics": {
+        "document_ready_ms": 223.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 223.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 424,
+      "WorkingSetMiB": 191.36,
+      "PeakWorkingSetMiB": 209.07,
+      "PrivateMiB": 206.71,
+      "Metrics": {
+        "document_ready_ms": 461.0,
+        "window_visible_ms": 244.0,
+        "editor_ready_ms": 461.0,
+        "first_frame_presented_ms": 257.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 145.38,
+      "PeakWorkingSetMiB": 151.79,
+      "PrivateMiB": 148.4,
+      "Metrics": {
+        "document_ready_ms": 213.0,
+        "window_visible_ms": 17.0,
+        "editor_ready_ms": 213.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 299,
+      "WorkingSetMiB": 191.68,
+      "PeakWorkingSetMiB": 209.64,
+      "PrivateMiB": 206.35,
+      "Metrics": {
+        "document_ready_ms": 471.0,
+        "window_visible_ms": 252.0,
+        "editor_ready_ms": 471.0,
+        "first_frame_presented_ms": 269.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 36,
+      "WorkingSetMiB": 145.23,
+      "PeakWorkingSetMiB": 146.85,
+      "PrivateMiB": 149.12,
+      "Metrics": {
+        "document_ready_ms": 242.0,
+        "window_visible_ms": 16.0,
+        "editor_ready_ms": 242.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 538,
+      "WorkingSetMiB": 191.86,
+      "PeakWorkingSetMiB": 209.84,
+      "PrivateMiB": 205.69,
+      "Metrics": {
+        "document_ready_ms": 453.0,
+        "window_visible_ms": 234.0,
+        "editor_ready_ms": 453.0,
+        "first_frame_presented_ms": 247.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 145.69,
+      "PeakWorkingSetMiB": 152.86,
+      "PrivateMiB": 149.91,
+      "Metrics": {
+        "document_ready_ms": 204.0,
+        "window_visible_ms": 17.0,
+        "editor_ready_ms": 204.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 265,
+      "WorkingSetMiB": 191.6,
+      "PeakWorkingSetMiB": 209.84,
+      "PrivateMiB": 205.84,
+      "Metrics": {
+        "document_ready_ms": 476.0,
+        "window_visible_ms": 251.0,
+        "editor_ready_ms": 476.0,
+        "first_frame_presented_ms": 264.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 245,
+      "WorkingSetMiB": 145.24,
+      "PeakWorkingSetMiB": 153.84,
+      "PrivateMiB": 149.46,
+      "Metrics": {
+        "document_ready_ms": 194.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 194.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 191.68,
+      "PeakWorkingSetMiB": 209.42,
+      "PrivateMiB": 206.2,
+      "Metrics": {
+        "document_ready_ms": 421.0,
+        "window_visible_ms": 210.0,
+        "editor_ready_ms": 421.0,
+        "first_frame_presented_ms": 223.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 145.46,
+      "PeakWorkingSetMiB": 151.2,
+      "PrivateMiB": 149.09,
+      "Metrics": {
+        "document_ready_ms": 236.0,
+        "window_visible_ms": 23.0,
+        "editor_ready_ms": 236.0,
+        "first_frame_presented_ms": 28.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 428,
+      "WorkingSetMiB": 188.27,
+      "PeakWorkingSetMiB": 205.85,
+      "PrivateMiB": 203.49,
+      "Metrics": {
+        "document_ready_ms": 437.0,
+        "window_visible_ms": 222.0,
+        "editor_ready_ms": 437.0,
+        "first_frame_presented_ms": 236.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 145.21,
+      "PeakWorkingSetMiB": 153.38,
+      "PrivateMiB": 148.06,
+      "Metrics": {
+        "document_ready_ms": 194.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 194.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 239,
+      "WorkingSetMiB": 192.02,
+      "PeakWorkingSetMiB": 208.73,
+      "PrivateMiB": 206.57,
+      "Metrics": {
+        "document_ready_ms": 419.0,
+        "window_visible_ms": 210.0,
+        "editor_ready_ms": 419.0,
+        "first_frame_presented_ms": 225.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 29,
+      "WorkingSetMiB": 145.29,
+      "PeakWorkingSetMiB": 153.1,
+      "PrivateMiB": 149.0,
+      "Metrics": {
+        "document_ready_ms": 199.0,
+        "window_visible_ms": 16.0,
+        "editor_ready_ms": 199.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 227,
+      "WorkingSetMiB": 191.18,
+      "PeakWorkingSetMiB": 207.62,
+      "PrivateMiB": 205.66,
+      "Metrics": {
+        "document_ready_ms": 419.0,
+        "window_visible_ms": 208.0,
+        "editor_ready_ms": 419.0,
+        "first_frame_presented_ms": 220.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 145.19,
+      "PeakWorkingSetMiB": 152.73,
+      "PrivateMiB": 149.08,
+      "Metrics": {
+        "document_ready_ms": 199.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 199.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 227,
+      "WorkingSetMiB": 192.7,
+      "PeakWorkingSetMiB": 210.66,
+      "PrivateMiB": 208.28,
+      "Metrics": {
+        "document_ready_ms": 422.0,
+        "window_visible_ms": 208.0,
+        "editor_ready_ms": 422.0,
+        "first_frame_presented_ms": 219.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 29,
+      "WorkingSetMiB": 145.54,
+      "PeakWorkingSetMiB": 153.7,
+      "PrivateMiB": 148.14,
+      "Metrics": {
+        "document_ready_ms": 199.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 199.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 240,
+      "WorkingSetMiB": 191.82,
+      "PeakWorkingSetMiB": 209.54,
+      "PrivateMiB": 206.18,
+      "Metrics": {
+        "document_ready_ms": 429.0,
+        "window_visible_ms": 219.0,
+        "editor_ready_ms": 429.0,
+        "first_frame_presented_ms": 230.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 72,
+      "WorkingSetMiB": 145.12,
+      "PeakWorkingSetMiB": 152.9,
+      "PrivateMiB": 148.97,
+      "Metrics": {
+        "document_ready_ms": 205.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 205.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 334,
+      "WorkingSetMiB": 191.87,
+      "PeakWorkingSetMiB": 209.6,
+      "PrivateMiB": 205.76,
+      "Metrics": {
+        "document_ready_ms": 428.0,
+        "window_visible_ms": 215.0,
+        "editor_ready_ms": 428.0,
+        "first_frame_presented_ms": 226.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 28,
+      "WorkingSetMiB": 145.73,
+      "PeakWorkingSetMiB": 153.25,
+      "PrivateMiB": 148.3,
+      "Metrics": {
+        "document_ready_ms": 201.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 201.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 227,
+      "WorkingSetMiB": 191.03,
+      "PeakWorkingSetMiB": 209.24,
+      "PrivateMiB": 203.79,
+      "Metrics": {
+        "document_ready_ms": 415.0,
+        "window_visible_ms": 206.0,
+        "editor_ready_ms": 415.0,
+        "first_frame_presented_ms": 218.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 145.33,
+      "PeakWorkingSetMiB": 152.93,
+      "PrivateMiB": 148.82,
+      "Metrics": {
+        "document_ready_ms": 192.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 192.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 257,
+      "WorkingSetMiB": 191.64,
+      "PeakWorkingSetMiB": 208.89,
+      "PrivateMiB": 207.2,
+      "Metrics": {
+        "document_ready_ms": 427.0,
+        "window_visible_ms": 214.0,
+        "editor_ready_ms": 427.0,
+        "first_frame_presented_ms": 225.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 145.61,
+      "PeakWorkingSetMiB": 154.04,
+      "PrivateMiB": 148.11,
+      "Metrics": {
+        "document_ready_ms": 214.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 214.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 191.56,
+      "PeakWorkingSetMiB": 209.66,
+      "PrivateMiB": 206.09,
+      "Metrics": {
+        "document_ready_ms": 431.0,
+        "window_visible_ms": 217.0,
+        "editor_ready_ms": 431.0,
+        "first_frame_presented_ms": 230.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 145.2,
+      "PeakWorkingSetMiB": 153.84,
+      "PrivateMiB": 149.23,
+      "Metrics": {
+        "document_ready_ms": 216.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 216.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 292,
+      "WorkingSetMiB": 190.51,
+      "PeakWorkingSetMiB": 208.01,
+      "PrivateMiB": 205.03,
+      "Metrics": {
+        "document_ready_ms": 411.0,
+        "window_visible_ms": 202.0,
+        "editor_ready_ms": 411.0,
+        "first_frame_presented_ms": 215.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 81,
+      "WorkingSetMiB": 144.99,
+      "PeakWorkingSetMiB": 152.77,
+      "PrivateMiB": 148.09,
+      "Metrics": {
+        "document_ready_ms": 217.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 217.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 213,
+      "WorkingSetMiB": 191.52,
+      "PeakWorkingSetMiB": 209.71,
+      "PrivateMiB": 205.9,
+      "Metrics": {
+        "document_ready_ms": 412.0,
+        "window_visible_ms": 203.0,
+        "editor_ready_ms": 412.0,
+        "first_frame_presented_ms": 213.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 145.41,
+      "PeakWorkingSetMiB": 153.05,
+      "PrivateMiB": 150.01,
+      "Metrics": {
+        "document_ready_ms": 193.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 193.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 191.28,
+      "PeakWorkingSetMiB": 209.31,
+      "PrivateMiB": 205.53,
+      "Metrics": {
+        "document_ready_ms": 429.0,
+        "window_visible_ms": 214.0,
+        "editor_ready_ms": 429.0,
+        "first_frame_presented_ms": 223.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 85,
+      "WorkingSetMiB": 145.2,
+      "PeakWorkingSetMiB": 154.06,
+      "PrivateMiB": 149.5,
+      "Metrics": {
+        "document_ready_ms": 197.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 197.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 206,
+      "WorkingSetMiB": 191.84,
+      "PeakWorkingSetMiB": 209.51,
+      "PrivateMiB": 206.66,
+      "Metrics": {
+        "document_ready_ms": 399.0,
+        "window_visible_ms": 191.0,
+        "editor_ready_ms": 399.0,
+        "first_frame_presented_ms": 207.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 217,
+      "WorkingSetMiB": 145.11,
+      "PeakWorkingSetMiB": 152.89,
+      "PrivateMiB": 149.72,
+      "Metrics": {
+        "document_ready_ms": 198.0,
+        "window_visible_ms": 13.0,
+        "editor_ready_ms": 198.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 212,
+      "WorkingSetMiB": 191.34,
+      "PeakWorkingSetMiB": 209.21,
+      "PrivateMiB": 205.86,
+      "Metrics": {
+        "document_ready_ms": 411.0,
+        "window_visible_ms": 197.0,
+        "editor_ready_ms": 411.0,
+        "first_frame_presented_ms": 214.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 45,
+      "WorkingSetMiB": 145.64,
+      "PeakWorkingSetMiB": 153.8,
+      "PrivateMiB": 148.44,
+      "Metrics": {
+        "document_ready_ms": 185.0,
+        "window_visible_ms": 13.0,
+        "editor_ready_ms": 185.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 241,
+      "WorkingSetMiB": 191.38,
+      "PeakWorkingSetMiB": 209.22,
+      "PrivateMiB": 205.67,
+      "Metrics": {
+        "document_ready_ms": 403.0,
+        "window_visible_ms": 197.0,
+        "editor_ready_ms": 403.0,
+        "first_frame_presented_ms": 208.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 29,
+      "WorkingSetMiB": 145.18,
+      "PeakWorkingSetMiB": 153.01,
+      "PrivateMiB": 148.6,
+      "Metrics": {
+        "document_ready_ms": 186.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 186.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 201,
+      "WorkingSetMiB": 191.03,
+      "PeakWorkingSetMiB": 209.0,
+      "PrivateMiB": 204.74,
+      "Metrics": {
+        "document_ready_ms": 390.0,
+        "window_visible_ms": 187.0,
+        "editor_ready_ms": 390.0,
+        "first_frame_presented_ms": 199.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 145.58,
+      "PeakWorkingSetMiB": 154.59,
+      "PrivateMiB": 149.82,
+      "Metrics": {
+        "document_ready_ms": 198.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 198.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 223,
+      "WorkingSetMiB": 191.2,
+      "PeakWorkingSetMiB": 208.78,
+      "PrivateMiB": 205.42,
+      "Metrics": {
+        "document_ready_ms": 410.0,
+        "window_visible_ms": 205.0,
+        "editor_ready_ms": 410.0,
+        "first_frame_presented_ms": 217.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 145.34,
+      "PeakWorkingSetMiB": 153.33,
+      "PrivateMiB": 148.6,
+      "Metrics": {
+        "document_ready_ms": 191.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 191.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 211,
+      "WorkingSetMiB": 190.87,
+      "PeakWorkingSetMiB": 208.92,
+      "PrivateMiB": 205.34,
+      "Metrics": {
+        "document_ready_ms": 409.0,
+        "window_visible_ms": 197.0,
+        "editor_ready_ms": 409.0,
+        "first_frame_presented_ms": 210.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 145.49,
+      "PeakWorkingSetMiB": 153.48,
+      "PrivateMiB": 149.04,
+      "Metrics": {
+        "document_ready_ms": 189.0,
+        "window_visible_ms": 13.0,
+        "editor_ready_ms": 189.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 212,
+      "WorkingSetMiB": 189.88,
+      "PeakWorkingSetMiB": 207.54,
+      "PrivateMiB": 204.29,
+      "Metrics": {
+        "document_ready_ms": 406.0,
+        "window_visible_ms": 199.0,
+        "editor_ready_ms": 406.0,
+        "first_frame_presented_ms": 213.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 145.28,
+      "PeakWorkingSetMiB": 152.64,
+      "PrivateMiB": 148.36,
+      "Metrics": {
+        "document_ready_ms": 190.0,
+        "window_visible_ms": 13.0,
+        "editor_ready_ms": 190.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 280,
+      "WorkingSetMiB": 191.07,
+      "PeakWorkingSetMiB": 208.97,
+      "PrivateMiB": 205.44,
+      "Metrics": {
+        "document_ready_ms": 438.0,
+        "window_visible_ms": 220.0,
+        "editor_ready_ms": 438.0,
+        "first_frame_presented_ms": 231.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 145.59,
+      "PeakWorkingSetMiB": 154.76,
+      "PrivateMiB": 149.43,
+      "Metrics": {
+        "document_ready_ms": 228.0,
+        "window_visible_ms": 20.0,
+        "editor_ready_ms": 228.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 209,
+      "WorkingSetMiB": 192.2,
+      "PeakWorkingSetMiB": 210.02,
+      "PrivateMiB": 206.46,
+      "Metrics": {
+        "document_ready_ms": 414.0,
+        "window_visible_ms": 201.0,
+        "editor_ready_ms": 414.0,
+        "first_frame_presented_ms": 215.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 145.26,
+      "PeakWorkingSetMiB": 153.01,
+      "PrivateMiB": 148.49,
+      "Metrics": {
+        "document_ready_ms": 183.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 183.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 404,
+      "WorkingSetMiB": 191.56,
+      "PeakWorkingSetMiB": 209.21,
+      "PrivateMiB": 205.78,
+      "Metrics": {
+        "document_ready_ms": 457.0,
+        "window_visible_ms": 229.0,
+        "editor_ready_ms": 457.0,
+        "first_frame_presented_ms": 239.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 145.71,
+      "PeakWorkingSetMiB": 153.31,
+      "PrivateMiB": 148.41,
+      "Metrics": {
+        "document_ready_ms": 217.0,
+        "window_visible_ms": 16.0,
+        "editor_ready_ms": 217.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 336,
+      "WorkingSetMiB": 191.66,
+      "PeakWorkingSetMiB": 209.58,
+      "PrivateMiB": 206.09,
+      "Metrics": {
+        "document_ready_ms": 473.0,
+        "window_visible_ms": 255.0,
+        "editor_ready_ms": 473.0,
+        "first_frame_presented_ms": 264.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 71,
+      "WorkingSetMiB": 145.05,
+      "PeakWorkingSetMiB": 152.21,
+      "PrivateMiB": 149.12,
+      "Metrics": {
+        "document_ready_ms": 226.0,
+        "window_visible_ms": 16.0,
+        "editor_ready_ms": 226.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .txt",
+      "Case": "RustText 40MB .txt",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 308,
+      "WorkingSetMiB": 191.29,
+      "PeakWorkingSetMiB": 209.28,
+      "PrivateMiB": 205.59,
+      "Metrics": {
+        "document_ready_ms": 425.0,
+        "window_visible_ms": 207.0,
+        "editor_ready_ms": 425.0,
+        "first_frame_presented_ms": 220.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .txt",
+      "Case": "NetText 40MB .txt",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 29,
+      "WorkingSetMiB": 145.42,
+      "PeakWorkingSetMiB": 153.07,
+      "PrivateMiB": 149.18,
+      "Metrics": {
+        "document_ready_ms": 198.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 198.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 250,
+      "WorkingSetMiB": 235.13,
+      "PeakWorkingSetMiB": 260.65,
+      "PrivateMiB": 274.01,
+      "Metrics": {
+        "document_ready_ms": 470.0,
+        "window_visible_ms": 238.0,
+        "editor_ready_ms": 470.0,
+        "first_frame_presented_ms": 250.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 72,
+      "WorkingSetMiB": 141.54,
+      "PeakWorkingSetMiB": 148.72,
+      "PrivateMiB": 144.71,
+      "Metrics": {
+        "document_ready_ms": 521.0,
+        "window_visible_ms": 16.0,
+        "editor_ready_ms": 521.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 308,
+      "WorkingSetMiB": 235.05,
+      "PeakWorkingSetMiB": 259.73,
+      "PrivateMiB": 275.14,
+      "Metrics": {
+        "document_ready_ms": 414.0,
+        "window_visible_ms": 203.0,
+        "editor_ready_ms": 414.0,
+        "first_frame_presented_ms": 213.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 141.7,
+      "PeakWorkingSetMiB": 149.24,
+      "PrivateMiB": 144.55,
+      "Metrics": {
+        "document_ready_ms": 523.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 523.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 233.75,
+      "PeakWorkingSetMiB": 260.07,
+      "PrivateMiB": 273.09,
+      "Metrics": {
+        "document_ready_ms": 428.0,
+        "window_visible_ms": 213.0,
+        "editor_ready_ms": 428.0,
+        "first_frame_presented_ms": 227.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 141.56,
+      "PeakWorkingSetMiB": 148.74,
+      "PrivateMiB": 144.34,
+      "Metrics": {
+        "document_ready_ms": 519.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 519.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 239,
+      "WorkingSetMiB": 233.43,
+      "PeakWorkingSetMiB": 259.17,
+      "PrivateMiB": 273.64,
+      "Metrics": {
+        "document_ready_ms": 429.0,
+        "window_visible_ms": 217.0,
+        "editor_ready_ms": 429.0,
+        "first_frame_presented_ms": 228.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 107,
+      "WorkingSetMiB": 141.56,
+      "PeakWorkingSetMiB": 148.5,
+      "PrivateMiB": 145.65,
+      "Metrics": {
+        "document_ready_ms": 514.0,
+        "window_visible_ms": 17.0,
+        "editor_ready_ms": 514.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 276,
+      "WorkingSetMiB": 234.99,
+      "PeakWorkingSetMiB": 261.0,
+      "PrivateMiB": 275.0,
+      "Metrics": {
+        "document_ready_ms": 421.0,
+        "window_visible_ms": 206.0,
+        "editor_ready_ms": 421.0,
+        "first_frame_presented_ms": 218.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 33,
+      "WorkingSetMiB": 141.38,
+      "PeakWorkingSetMiB": 148.47,
+      "PrivateMiB": 144.77,
+      "Metrics": {
+        "document_ready_ms": 515.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 515.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 244,
+      "WorkingSetMiB": 234.84,
+      "PeakWorkingSetMiB": 260.41,
+      "PrivateMiB": 275.73,
+      "Metrics": {
+        "document_ready_ms": 418.0,
+        "window_visible_ms": 210.0,
+        "editor_ready_ms": 418.0,
+        "first_frame_presented_ms": 218.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 141.48,
+      "PeakWorkingSetMiB": 148.39,
+      "PrivateMiB": 144.52,
+      "Metrics": {
+        "document_ready_ms": 508.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 508.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 256,
+      "WorkingSetMiB": 235.4,
+      "PeakWorkingSetMiB": 260.69,
+      "PrivateMiB": 275.6,
+      "Metrics": {
+        "document_ready_ms": 423.0,
+        "window_visible_ms": 209.0,
+        "editor_ready_ms": 423.0,
+        "first_frame_presented_ms": 222.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 141.48,
+      "PeakWorkingSetMiB": 148.41,
+      "PrivateMiB": 144.92,
+      "Metrics": {
+        "document_ready_ms": 508.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 508.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 255,
+      "WorkingSetMiB": 234.74,
+      "PeakWorkingSetMiB": 259.92,
+      "PrivateMiB": 274.82,
+      "Metrics": {
+        "document_ready_ms": 421.0,
+        "window_visible_ms": 208.0,
+        "editor_ready_ms": 421.0,
+        "first_frame_presented_ms": 222.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 141.8,
+      "PeakWorkingSetMiB": 148.91,
+      "PrivateMiB": 145.86,
+      "Metrics": {
+        "document_ready_ms": 506.0,
+        "window_visible_ms": 13.0,
+        "editor_ready_ms": 506.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 220,
+      "WorkingSetMiB": 234.18,
+      "PeakWorkingSetMiB": 259.83,
+      "PrivateMiB": 272.4,
+      "Metrics": {
+        "document_ready_ms": 413.0,
+        "window_visible_ms": 202.0,
+        "editor_ready_ms": 413.0,
+        "first_frame_presented_ms": 215.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 20,
+      "WorkingSetMiB": 141.64,
+      "PeakWorkingSetMiB": 148.49,
+      "PrivateMiB": 145.76,
+      "Metrics": {
+        "document_ready_ms": 508.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 508.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 221,
+      "WorkingSetMiB": 234.95,
+      "PeakWorkingSetMiB": 260.07,
+      "PrivateMiB": 274.61,
+      "Metrics": {
+        "document_ready_ms": 416.0,
+        "window_visible_ms": 203.0,
+        "editor_ready_ms": 416.0,
+        "first_frame_presented_ms": 216.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 141.95,
+      "PeakWorkingSetMiB": 149.2,
+      "PrivateMiB": 146.07,
+      "Metrics": {
+        "document_ready_ms": 510.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 510.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 234.63,
+      "PeakWorkingSetMiB": 259.63,
+      "PrivateMiB": 274.19,
+      "Metrics": {
+        "document_ready_ms": 421.0,
+        "window_visible_ms": 215.0,
+        "editor_ready_ms": 421.0,
+        "first_frame_presented_ms": 227.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 20,
+      "WorkingSetMiB": 141.5,
+      "PeakWorkingSetMiB": 148.79,
+      "PrivateMiB": 145.59,
+      "Metrics": {
+        "document_ready_ms": 520.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 520.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 222,
+      "WorkingSetMiB": 234.77,
+      "PeakWorkingSetMiB": 260.29,
+      "PrivateMiB": 274.71,
+      "Metrics": {
+        "document_ready_ms": 422.0,
+        "window_visible_ms": 213.0,
+        "editor_ready_ms": 422.0,
+        "first_frame_presented_ms": 226.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 141.85,
+      "PeakWorkingSetMiB": 148.93,
+      "PrivateMiB": 144.44,
+      "Metrics": {
+        "document_ready_ms": 515.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 515.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 234.37,
+      "PeakWorkingSetMiB": 260.06,
+      "PrivateMiB": 273.44,
+      "Metrics": {
+        "document_ready_ms": 413.0,
+        "window_visible_ms": 207.0,
+        "editor_ready_ms": 413.0,
+        "first_frame_presented_ms": 229.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 33,
+      "WorkingSetMiB": 141.39,
+      "PeakWorkingSetMiB": 148.42,
+      "PrivateMiB": 145.85,
+      "Metrics": {
+        "document_ready_ms": 519.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 519.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 249,
+      "WorkingSetMiB": 235.14,
+      "PeakWorkingSetMiB": 260.43,
+      "PrivateMiB": 274.8,
+      "Metrics": {
+        "document_ready_ms": 443.0,
+        "window_visible_ms": 230.0,
+        "editor_ready_ms": 443.0,
+        "first_frame_presented_ms": 246.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 141.72,
+      "PeakWorkingSetMiB": 149.14,
+      "PrivateMiB": 145.26,
+      "Metrics": {
+        "document_ready_ms": 516.0,
+        "window_visible_ms": 14.0,
+        "editor_ready_ms": 516.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 525,
+      "WorkingSetMiB": 234.84,
+      "PeakWorkingSetMiB": 260.44,
+      "PrivateMiB": 274.96,
+      "Metrics": {
+        "document_ready_ms": 461.0,
+        "window_visible_ms": 250.0,
+        "editor_ready_ms": 461.0,
+        "first_frame_presented_ms": 263.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 37,
+      "WorkingSetMiB": 141.42,
+      "PeakWorkingSetMiB": 148.68,
+      "PrivateMiB": 145.33,
+      "Metrics": {
+        "document_ready_ms": 524.0,
+        "window_visible_ms": 17.0,
+        "editor_ready_ms": 524.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 335,
+      "WorkingSetMiB": 235.0,
+      "PeakWorkingSetMiB": 260.25,
+      "PrivateMiB": 274.71,
+      "Metrics": {
+        "document_ready_ms": 443.0,
+        "window_visible_ms": 229.0,
+        "editor_ready_ms": 443.0,
+        "first_frame_presented_ms": 238.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 141.25,
+      "PeakWorkingSetMiB": 148.77,
+      "PrivateMiB": 145.63,
+      "Metrics": {
+        "document_ready_ms": 537.0,
+        "window_visible_ms": 18.0,
+        "editor_ready_ms": 537.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 287,
+      "WorkingSetMiB": 234.59,
+      "PeakWorkingSetMiB": 260.0,
+      "PrivateMiB": 275.45,
+      "Metrics": {
+        "document_ready_ms": 439.0,
+        "window_visible_ms": 224.0,
+        "editor_ready_ms": 439.0,
+        "first_frame_presented_ms": 243.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 141.3,
+      "PeakWorkingSetMiB": 148.76,
+      "PrivateMiB": 144.98,
+      "Metrics": {
+        "document_ready_ms": 530.0,
+        "window_visible_ms": 21.0,
+        "editor_ready_ms": 530.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 242,
+      "WorkingSetMiB": 234.61,
+      "PeakWorkingSetMiB": 260.92,
+      "PrivateMiB": 275.11,
+      "Metrics": {
+        "document_ready_ms": 441.0,
+        "window_visible_ms": 225.0,
+        "editor_ready_ms": 441.0,
+        "first_frame_presented_ms": 237.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 141.9,
+      "PeakWorkingSetMiB": 149.25,
+      "PrivateMiB": 145.54,
+      "Metrics": {
+        "document_ready_ms": 592.0,
+        "window_visible_ms": 19.0,
+        "editor_ready_ms": 592.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 348,
+      "WorkingSetMiB": 235.33,
+      "PeakWorkingSetMiB": 260.92,
+      "PrivateMiB": 274.81,
+      "Metrics": {
+        "document_ready_ms": 492.0,
+        "window_visible_ms": 274.0,
+        "editor_ready_ms": 492.0,
+        "first_frame_presented_ms": 287.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 36,
+      "WorkingSetMiB": 141.53,
+      "PeakWorkingSetMiB": 148.49,
+      "PrivateMiB": 145.98,
+      "Metrics": {
+        "document_ready_ms": 535.0,
+        "window_visible_ms": 23.0,
+        "editor_ready_ms": 535.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 307,
+      "WorkingSetMiB": 235.59,
+      "PeakWorkingSetMiB": 260.79,
+      "PrivateMiB": 275.23,
+      "Metrics": {
+        "document_ready_ms": 429.0,
+        "window_visible_ms": 222.0,
+        "editor_ready_ms": 429.0,
+        "first_frame_presented_ms": 232.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 21,
+      "WorkingSetMiB": 141.89,
+      "PeakWorkingSetMiB": 149.09,
+      "PrivateMiB": 144.83,
+      "Metrics": {
+        "document_ready_ms": 533.0,
+        "window_visible_ms": 15.0,
+        "editor_ready_ms": 533.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 240,
+      "WorkingSetMiB": 234.29,
+      "PeakWorkingSetMiB": 260.21,
+      "PrivateMiB": 273.54,
+      "Metrics": {
+        "document_ready_ms": 442.0,
+        "window_visible_ms": 229.0,
+        "editor_ready_ms": 442.0,
+        "first_frame_presented_ms": 239.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 35,
+      "WorkingSetMiB": 141.2,
+      "PeakWorkingSetMiB": 148.66,
+      "PrivateMiB": 145.5,
+      "Metrics": {
+        "document_ready_ms": 567.0,
+        "window_visible_ms": 19.0,
+        "editor_ready_ms": 567.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 413,
+      "WorkingSetMiB": 235.56,
+      "PeakWorkingSetMiB": 260.63,
+      "PrivateMiB": 275.34,
+      "Metrics": {
+        "document_ready_ms": 519.0,
+        "window_visible_ms": 288.0,
+        "editor_ready_ms": 519.0,
+        "first_frame_presented_ms": 300.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 37,
+      "WorkingSetMiB": 141.82,
+      "PeakWorkingSetMiB": 148.91,
+      "PrivateMiB": 144.71,
+      "Metrics": {
+        "document_ready_ms": 726.0,
+        "window_visible_ms": 20.0,
+        "editor_ready_ms": 726.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 331,
+      "WorkingSetMiB": 234.35,
+      "PeakWorkingSetMiB": 260.66,
+      "PrivateMiB": 274.5,
+      "Metrics": {
+        "document_ready_ms": 541.0,
+        "window_visible_ms": 315.0,
+        "editor_ready_ms": 541.0,
+        "first_frame_presented_ms": 328.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 47,
+      "WorkingSetMiB": 141.66,
+      "PeakWorkingSetMiB": 148.59,
+      "PrivateMiB": 144.38,
+      "Metrics": {
+        "document_ready_ms": 580.0,
+        "window_visible_ms": 19.0,
+        "editor_ready_ms": 580.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 323,
+      "WorkingSetMiB": 234.28,
+      "PeakWorkingSetMiB": 260.59,
+      "PrivateMiB": 274.68,
+      "Metrics": {
+        "document_ready_ms": 524.0,
+        "window_visible_ms": 309.0,
+        "editor_ready_ms": 524.0,
+        "first_frame_presented_ms": 319.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 38,
+      "WorkingSetMiB": 141.86,
+      "PeakWorkingSetMiB": 149.17,
+      "PrivateMiB": 145.46,
+      "Metrics": {
+        "document_ready_ms": 626.0,
+        "window_visible_ms": 28.0,
+        "editor_ready_ms": 626.0,
+        "first_frame_presented_ms": 34.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 297,
+      "WorkingSetMiB": 234.55,
+      "PeakWorkingSetMiB": 260.86,
+      "PrivateMiB": 274.24,
+      "Metrics": {
+        "document_ready_ms": 516.0,
+        "window_visible_ms": 279.0,
+        "editor_ready_ms": 516.0,
+        "first_frame_presented_ms": 293.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 128,
+      "WorkingSetMiB": 141.5,
+      "PeakWorkingSetMiB": 148.77,
+      "PrivateMiB": 144.74,
+      "Metrics": {
+        "document_ready_ms": 652.0,
+        "window_visible_ms": 21.0,
+        "editor_ready_ms": 652.0,
+        "first_frame_presented_ms": 26.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 301,
+      "WorkingSetMiB": 234.52,
+      "PeakWorkingSetMiB": 260.75,
+      "PrivateMiB": 274.79,
+      "Metrics": {
+        "document_ready_ms": 521.0,
+        "window_visible_ms": 284.0,
+        "editor_ready_ms": 521.0,
+        "first_frame_presented_ms": 301.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 141.9,
+      "PeakWorkingSetMiB": 148.98,
+      "PrivateMiB": 146.07,
+      "Metrics": {
+        "document_ready_ms": 603.0,
+        "window_visible_ms": 19.0,
+        "editor_ready_ms": 603.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 286,
+      "WorkingSetMiB": 235.3,
+      "PeakWorkingSetMiB": 261.22,
+      "PrivateMiB": 275.29,
+      "Metrics": {
+        "document_ready_ms": 503.0,
+        "window_visible_ms": 275.0,
+        "editor_ready_ms": 503.0,
+        "first_frame_presented_ms": 290.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 34,
+      "WorkingSetMiB": 141.62,
+      "PeakWorkingSetMiB": 148.75,
+      "PrivateMiB": 145.24,
+      "Metrics": {
+        "document_ready_ms": 687.0,
+        "window_visible_ms": 22.0,
+        "editor_ready_ms": 687.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 284,
+      "WorkingSetMiB": 234.88,
+      "PeakWorkingSetMiB": 259.45,
+      "PrivateMiB": 275.36,
+      "Metrics": {
+        "document_ready_ms": 478.0,
+        "window_visible_ms": 266.0,
+        "editor_ready_ms": 478.0,
+        "first_frame_presented_ms": 279.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 141.71,
+      "PeakWorkingSetMiB": 148.84,
+      "PrivateMiB": 145.5,
+      "Metrics": {
+        "document_ready_ms": 619.0,
+        "window_visible_ms": 17.0,
+        "editor_ready_ms": 619.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 268,
+      "WorkingSetMiB": 233.87,
+      "PeakWorkingSetMiB": 259.84,
+      "PrivateMiB": 273.51,
+      "Metrics": {
+        "document_ready_ms": 461.0,
+        "window_visible_ms": 245.0,
+        "editor_ready_ms": 461.0,
+        "first_frame_presented_ms": 262.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 33,
+      "WorkingSetMiB": 141.52,
+      "PeakWorkingSetMiB": 148.84,
+      "PrivateMiB": 144.42,
+      "Metrics": {
+        "document_ready_ms": 581.0,
+        "window_visible_ms": 18.0,
+        "editor_ready_ms": 581.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "40MB .json",
+      "Case": "RustText 40MB .json",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 288,
+      "WorkingSetMiB": 235.21,
+      "PeakWorkingSetMiB": 260.66,
+      "PrivateMiB": 275.7,
+      "Metrics": {
+        "document_ready_ms": 467.0,
+        "window_visible_ms": 255.0,
+        "editor_ready_ms": 467.0,
+        "first_frame_presented_ms": 265.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "40MB .json",
+      "Case": "NetText 40MB .json",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 68,
+      "WorkingSetMiB": 141.42,
+      "PeakWorkingSetMiB": 148.85,
+      "PrivateMiB": 145.0,
+      "Metrics": {
+        "document_ready_ms": 547.0,
+        "window_visible_ms": 19.0,
+        "editor_ready_ms": 547.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 263,
+      "WorkingSetMiB": 88.09,
+      "PeakWorkingSetMiB": 88.09,
+      "PrivateMiB": 101.4,
+      "Metrics": {
+        "window_visible_ms": 252.0,
+        "first_log_frame_ms": 270.0,
+        "first_frame_presented_ms": 262.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 28,
+      "WorkingSetMiB": 33.16,
+      "PeakWorkingSetMiB": 33.16,
+      "PrivateMiB": 10.74,
+      "Metrics": {
+        "window_visible_ms": 18.0,
+        "first_log_frame_ms": 36.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 273,
+      "WorkingSetMiB": 87.91,
+      "PeakWorkingSetMiB": 87.91,
+      "PrivateMiB": 101.61,
+      "Metrics": {
+        "window_visible_ms": 254.0,
+        "first_log_frame_ms": 279.0,
+        "first_frame_presented_ms": 267.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 32.95,
+      "PeakWorkingSetMiB": 32.95,
+      "PrivateMiB": 10.61,
+      "Metrics": {
+        "window_visible_ms": 20.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 275,
+      "WorkingSetMiB": 88.09,
+      "PeakWorkingSetMiB": 88.09,
+      "PrivateMiB": 102.33,
+      "Metrics": {
+        "window_visible_ms": 259.0,
+        "first_log_frame_ms": 277.0,
+        "first_frame_presented_ms": 270.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 30,
+      "WorkingSetMiB": 33.26,
+      "PeakWorkingSetMiB": 33.26,
+      "PrivateMiB": 10.94,
+      "Metrics": {
+        "window_visible_ms": 18.0,
+        "first_log_frame_ms": 32.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 289,
+      "WorkingSetMiB": 87.44,
+      "PeakWorkingSetMiB": 87.44,
+      "PrivateMiB": 101.01,
+      "Metrics": {
+        "window_visible_ms": 270.0,
+        "first_log_frame_ms": 291.0,
+        "first_frame_presented_ms": 280.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 32.95,
+      "PeakWorkingSetMiB": 32.95,
+      "PrivateMiB": 10.49,
+      "Metrics": {
+        "window_visible_ms": 33.0,
+        "first_log_frame_ms": 73.0,
+        "first_frame_presented_ms": 39.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 274,
+      "WorkingSetMiB": 86.04,
+      "PeakWorkingSetMiB": 86.04,
+      "PrivateMiB": 101.32,
+      "Metrics": {
+        "window_visible_ms": 256.0,
+        "first_log_frame_ms": 272.0,
+        "first_frame_presented_ms": 265.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 86,
+      "WorkingSetMiB": 32.97,
+      "PeakWorkingSetMiB": 32.97,
+      "PrivateMiB": 10.65,
+      "Metrics": {
+        "window_visible_ms": 19.0,
+        "first_log_frame_ms": 36.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 276,
+      "WorkingSetMiB": 87.29,
+      "PeakWorkingSetMiB": 87.29,
+      "PrivateMiB": 100.93,
+      "Metrics": {
+        "window_visible_ms": 267.0,
+        "first_log_frame_ms": 286.0,
+        "first_frame_presented_ms": 279.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 33.17,
+      "PeakWorkingSetMiB": 33.17,
+      "PrivateMiB": 10.84,
+      "Metrics": {
+        "window_visible_ms": 19.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 290,
+      "WorkingSetMiB": 84.7,
+      "PeakWorkingSetMiB": 84.7,
+      "PrivateMiB": 100.35,
+      "Metrics": {
+        "window_visible_ms": 280.0,
+        "first_log_frame_ms": 299.0,
+        "first_frame_presented_ms": 290.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.08,
+      "PeakWorkingSetMiB": 33.08,
+      "PrivateMiB": 10.89,
+      "Metrics": {
+        "window_visible_ms": 17.0,
+        "first_log_frame_ms": 31.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 305,
+      "WorkingSetMiB": 86.66,
+      "PeakWorkingSetMiB": 86.66,
+      "PrivateMiB": 99.88,
+      "Metrics": {
+        "window_visible_ms": 289.0,
+        "first_log_frame_ms": 308.0,
+        "first_frame_presented_ms": 308.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 38,
+      "WorkingSetMiB": 32.94,
+      "PeakWorkingSetMiB": 32.94,
+      "PrivateMiB": 10.53,
+      "Metrics": {
+        "window_visible_ms": 19.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 242,
+      "WorkingSetMiB": 88.02,
+      "PeakWorkingSetMiB": 88.02,
+      "PrivateMiB": 101.71,
+      "Metrics": {
+        "window_visible_ms": 226.0,
+        "first_log_frame_ms": 245.0,
+        "first_frame_presented_ms": 238.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 36,
+      "WorkingSetMiB": 33.32,
+      "PeakWorkingSetMiB": 33.32,
+      "PrivateMiB": 11.05,
+      "Metrics": {
+        "window_visible_ms": 17.0,
+        "first_log_frame_ms": 30.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 287,
+      "WorkingSetMiB": 87.43,
+      "PeakWorkingSetMiB": 87.43,
+      "PrivateMiB": 100.86,
+      "Metrics": {
+        "window_visible_ms": 261.0,
+        "first_log_frame_ms": 280.0,
+        "first_frame_presented_ms": 274.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 33.05,
+      "PeakWorkingSetMiB": 33.05,
+      "PrivateMiB": 10.7,
+      "Metrics": {
+        "window_visible_ms": 21.0,
+        "first_log_frame_ms": 43.0,
+        "first_frame_presented_ms": 27.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 289,
+      "WorkingSetMiB": 87.24,
+      "PeakWorkingSetMiB": 87.24,
+      "PrivateMiB": 100.71,
+      "Metrics": {
+        "window_visible_ms": 279.0,
+        "first_log_frame_ms": 294.0,
+        "first_frame_presented_ms": 294.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 32.95,
+      "PeakWorkingSetMiB": 32.95,
+      "PrivateMiB": 10.56,
+      "Metrics": {
+        "window_visible_ms": 17.0,
+        "first_log_frame_ms": 32.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 459,
+      "WorkingSetMiB": 86.88,
+      "PeakWorkingSetMiB": 86.88,
+      "PrivateMiB": 101.7,
+      "Metrics": {
+        "window_visible_ms": 283.0,
+        "first_log_frame_ms": 299.0,
+        "first_frame_presented_ms": 293.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 32.95,
+      "PeakWorkingSetMiB": 32.95,
+      "PrivateMiB": 10.55,
+      "Metrics": {
+        "window_visible_ms": 18.0,
+        "first_log_frame_ms": 38.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 318,
+      "WorkingSetMiB": 85.98,
+      "PeakWorkingSetMiB": 85.98,
+      "PrivateMiB": 99.44,
+      "Metrics": {
+        "window_visible_ms": 215.0,
+        "first_log_frame_ms": 231.0,
+        "first_frame_presented_ms": 224.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 228,
+      "WorkingSetMiB": 33.22,
+      "PeakWorkingSetMiB": 33.22,
+      "PrivateMiB": 10.85,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 506,
+      "WorkingSetMiB": 87.11,
+      "PeakWorkingSetMiB": 87.11,
+      "PrivateMiB": 100.75,
+      "Metrics": {
+        "window_visible_ms": 238.0,
+        "first_log_frame_ms": 260.0,
+        "first_frame_presented_ms": 252.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 32.9,
+      "PeakWorkingSetMiB": 32.9,
+      "PrivateMiB": 10.52,
+      "Metrics": {
+        "window_visible_ms": 19.0,
+        "first_log_frame_ms": 40.0,
+        "first_frame_presented_ms": 25.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 265,
+      "WorkingSetMiB": 86.9,
+      "PeakWorkingSetMiB": 86.9,
+      "PrivateMiB": 99.09,
+      "Metrics": {
+        "window_visible_ms": 246.0,
+        "first_log_frame_ms": 265.0,
+        "first_frame_presented_ms": 258.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 35,
+      "WorkingSetMiB": 33.21,
+      "PeakWorkingSetMiB": 33.21,
+      "PrivateMiB": 10.87,
+      "Metrics": {
+        "window_visible_ms": 18.0,
+        "first_log_frame_ms": 35.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 273,
+      "WorkingSetMiB": 86.0,
+      "PeakWorkingSetMiB": 86.0,
+      "PrivateMiB": 100.41,
+      "Metrics": {
+        "window_visible_ms": 256.0,
+        "first_log_frame_ms": 276.0,
+        "first_frame_presented_ms": 269.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 55,
+      "WorkingSetMiB": 33.21,
+      "PeakWorkingSetMiB": 33.21,
+      "PrivateMiB": 10.85,
+      "Metrics": {
+        "window_visible_ms": 21.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 26.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 240,
+      "WorkingSetMiB": 87.26,
+      "PeakWorkingSetMiB": 87.26,
+      "PrivateMiB": 100.7,
+      "Metrics": {
+        "window_visible_ms": 220.0,
+        "first_log_frame_ms": 240.0,
+        "first_frame_presented_ms": 229.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 253,
+      "WorkingSetMiB": 32.94,
+      "PeakWorkingSetMiB": 32.94,
+      "PrivateMiB": 10.51,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 32.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 286,
+      "WorkingSetMiB": 87.37,
+      "PeakWorkingSetMiB": 87.37,
+      "PrivateMiB": 99.84,
+      "Metrics": {
+        "window_visible_ms": 268.0,
+        "first_log_frame_ms": 285.0,
+        "first_frame_presented_ms": 285.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 55,
+      "WorkingSetMiB": 33.34,
+      "PeakWorkingSetMiB": 33.34,
+      "PrivateMiB": 10.99,
+      "Metrics": {
+        "window_visible_ms": 17.0,
+        "first_log_frame_ms": 31.0,
+        "first_frame_presented_ms": 22.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 425,
+      "WorkingSetMiB": 87.95,
+      "PeakWorkingSetMiB": 87.95,
+      "PrivateMiB": 101.34,
+      "Metrics": {
+        "window_visible_ms": 235.0,
+        "first_log_frame_ms": 251.0,
+        "first_frame_presented_ms": 251.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 276,
+      "WorkingSetMiB": 33.19,
+      "PeakWorkingSetMiB": 33.19,
+      "PrivateMiB": 10.74,
+      "Metrics": {
+        "window_visible_ms": 22.0,
+        "first_log_frame_ms": 47.0,
+        "first_frame_presented_ms": 29.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 241,
+      "WorkingSetMiB": 87.44,
+      "PeakWorkingSetMiB": 87.44,
+      "PrivateMiB": 101.03,
+      "Metrics": {
+        "window_visible_ms": 229.0,
+        "first_log_frame_ms": 246.0,
+        "first_frame_presented_ms": 239.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 444,
+      "WorkingSetMiB": 32.98,
+      "PeakWorkingSetMiB": 32.98,
+      "PrivateMiB": 10.6,
+      "Metrics": {
+        "window_visible_ms": 18.0,
+        "first_log_frame_ms": 49.0,
+        "first_frame_presented_ms": 23.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 253,
+      "WorkingSetMiB": 87.8,
+      "PeakWorkingSetMiB": 87.8,
+      "PrivateMiB": 101.77,
+      "Metrics": {
+        "window_visible_ms": 230.0,
+        "first_log_frame_ms": 249.0,
+        "first_frame_presented_ms": 242.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 54,
+      "WorkingSetMiB": 32.92,
+      "PeakWorkingSetMiB": 32.92,
+      "PrivateMiB": 10.51,
+      "Metrics": {
+        "window_visible_ms": 18.0,
+        "first_log_frame_ms": 35.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 287,
+      "WorkingSetMiB": 87.57,
+      "PeakWorkingSetMiB": 87.57,
+      "PrivateMiB": 101.75,
+      "Metrics": {
+        "window_visible_ms": 260.0,
+        "first_log_frame_ms": 291.0,
+        "first_frame_presented_ms": 275.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.19,
+      "PeakWorkingSetMiB": 33.19,
+      "PrivateMiB": 10.8,
+      "Metrics": {
+        "window_visible_ms": 19.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 267,
+      "WorkingSetMiB": 87.19,
+      "PeakWorkingSetMiB": 87.19,
+      "PrivateMiB": 100.88,
+      "Metrics": {
+        "window_visible_ms": 225.0,
+        "first_log_frame_ms": 241.0,
+        "first_frame_presented_ms": 235.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.23,
+      "PeakWorkingSetMiB": 33.23,
+      "PrivateMiB": 10.84,
+      "Metrics": {
+        "window_visible_ms": 19.0,
+        "first_log_frame_ms": 32.0,
+        "first_frame_presented_ms": 24.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 256,
+      "WorkingSetMiB": 87.61,
+      "PeakWorkingSetMiB": 87.61,
+      "PrivateMiB": 101.71,
+      "Metrics": {
+        "window_visible_ms": 238.0,
+        "first_log_frame_ms": 255.0,
+        "first_frame_presented_ms": 255.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 39,
+      "WorkingSetMiB": 33.2,
+      "PeakWorkingSetMiB": 33.2,
+      "PrivateMiB": 10.8,
+      "Metrics": {
+        "window_visible_ms": 20.0,
+        "first_log_frame_ms": 50.0,
+        "first_frame_presented_ms": 26.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 307,
+      "WorkingSetMiB": 87.62,
+      "PeakWorkingSetMiB": 87.62,
+      "PrivateMiB": 102.36,
+      "Metrics": {
+        "window_visible_ms": 205.0,
+        "first_log_frame_ms": 221.0,
+        "first_frame_presented_ms": 221.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 125,
+      "WorkingSetMiB": 32.92,
+      "PeakWorkingSetMiB": 32.92,
+      "PrivateMiB": 10.54,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 27.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 256,
+      "WorkingSetMiB": 85.7,
+      "PeakWorkingSetMiB": 85.7,
+      "PrivateMiB": 100.82,
+      "Metrics": {
+        "window_visible_ms": 237.0,
+        "first_log_frame_ms": 252.0,
+        "first_frame_presented_ms": 252.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.21,
+      "PeakWorkingSetMiB": 33.21,
+      "PrivateMiB": 10.86,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 21.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 213,
+      "WorkingSetMiB": 87.16,
+      "PeakWorkingSetMiB": 87.16,
+      "PrivateMiB": 100.76,
+      "Metrics": {
+        "window_visible_ms": 199.0,
+        "first_log_frame_ms": 218.0,
+        "first_frame_presented_ms": 211.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.24,
+      "PeakWorkingSetMiB": 33.24,
+      "PrivateMiB": 10.82,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 242,
+      "WorkingSetMiB": 87.09,
+      "PeakWorkingSetMiB": 87.09,
+      "PrivateMiB": 100.69,
+      "Metrics": {
+        "window_visible_ms": 222.0,
+        "first_log_frame_ms": 240.0,
+        "first_frame_presented_ms": 233.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.39,
+      "PeakWorkingSetMiB": 33.39,
+      "PrivateMiB": 11.02,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 21.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 226,
+      "WorkingSetMiB": 87.14,
+      "PeakWorkingSetMiB": 87.14,
+      "PrivateMiB": 100.66,
+      "Metrics": {
+        "window_visible_ms": 203.0,
+        "first_log_frame_ms": 221.0,
+        "first_frame_presented_ms": 214.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 33.04,
+      "PeakWorkingSetMiB": 33.04,
+      "PrivateMiB": 10.72,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB .txt",
+      "Case": "RustText 10GiB .txt",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 241,
+      "WorkingSetMiB": 87.66,
+      "PeakWorkingSetMiB": 87.66,
+      "PrivateMiB": 100.24,
+      "Metrics": {
+        "window_visible_ms": 222.0,
+        "first_log_frame_ms": 240.0,
+        "first_frame_presented_ms": 233.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB .txt",
+      "Case": "NetText 10GiB .txt",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.35,
+      "PeakWorkingSetMiB": 33.35,
+      "PrivateMiB": 10.95,
+      "Metrics": {
+        "window_visible_ms": 17.0,
+        "first_log_frame_ms": 34.0,
+        "first_frame_presented_ms": 21.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 218,
+      "WorkingSetMiB": 85.27,
+      "PeakWorkingSetMiB": 85.27,
+      "PrivateMiB": 99.99,
+      "Metrics": {
+        "window_visible_ms": 200.0,
+        "first_log_frame_ms": 225.0,
+        "first_frame_presented_ms": 214.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 28,
+      "WorkingSetMiB": 33.06,
+      "PeakWorkingSetMiB": 33.06,
+      "PrivateMiB": 10.71,
+      "Metrics": {
+        "window_visible_ms": 13.0,
+        "first_log_frame_ms": 23.0,
+        "first_frame_presented_ms": 17.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 229,
+      "WorkingSetMiB": 87.57,
+      "PeakWorkingSetMiB": 87.57,
+      "PrivateMiB": 101.32,
+      "Metrics": {
+        "window_visible_ms": 218.0,
+        "first_log_frame_ms": 237.0,
+        "first_frame_presented_ms": 237.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 33.31,
+      "PeakWorkingSetMiB": 33.31,
+      "PrivateMiB": 10.89,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 237,
+      "WorkingSetMiB": 87.45,
+      "PeakWorkingSetMiB": 87.45,
+      "PrivateMiB": 100.12,
+      "Metrics": {
+        "window_visible_ms": 221.0,
+        "first_log_frame_ms": 241.0,
+        "first_frame_presented_ms": 233.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 32.91,
+      "PeakWorkingSetMiB": 32.91,
+      "PrivateMiB": 10.49,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 27.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 226,
+      "WorkingSetMiB": 87.21,
+      "PeakWorkingSetMiB": 87.21,
+      "PrivateMiB": 100.67,
+      "Metrics": {
+        "window_visible_ms": 210.0,
+        "first_log_frame_ms": 229.0,
+        "first_frame_presented_ms": 219.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.41,
+      "PeakWorkingSetMiB": 33.41,
+      "PrivateMiB": 11.04,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 32.0,
+        "first_frame_presented_ms": 21.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 305,
+      "WorkingSetMiB": 87.26,
+      "PeakWorkingSetMiB": 87.26,
+      "PrivateMiB": 100.97,
+      "Metrics": {
+        "window_visible_ms": 208.0,
+        "first_log_frame_ms": 223.0,
+        "first_frame_presented_ms": 223.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 32.97,
+      "PeakWorkingSetMiB": 32.97,
+      "PrivateMiB": 10.63,
+      "Metrics": {
+        "window_visible_ms": 13.0,
+        "first_log_frame_ms": 23.0,
+        "first_frame_presented_ms": 17.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 212,
+      "WorkingSetMiB": 87.63,
+      "PeakWorkingSetMiB": 87.63,
+      "PrivateMiB": 101.18,
+      "Metrics": {
+        "window_visible_ms": 196.0,
+        "first_log_frame_ms": 215.0,
+        "first_frame_presented_ms": 208.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 6,
+      "Order": "NetFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 33.31,
+      "PeakWorkingSetMiB": 33.31,
+      "PrivateMiB": 10.96,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 36.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 218,
+      "WorkingSetMiB": 87.75,
+      "PeakWorkingSetMiB": 87.75,
+      "PrivateMiB": 101.23,
+      "Metrics": {
+        "window_visible_ms": 204.0,
+        "first_log_frame_ms": 221.0,
+        "first_frame_presented_ms": 221.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 7,
+      "Order": "RustFirst",
+      "WindowMs": 29,
+      "WorkingSetMiB": 33.38,
+      "PeakWorkingSetMiB": 33.38,
+      "PrivateMiB": 10.97,
+      "Metrics": {
+        "window_visible_ms": 13.0,
+        "first_log_frame_ms": 23.0,
+        "first_frame_presented_ms": 17.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 227,
+      "WorkingSetMiB": 87.4,
+      "PeakWorkingSetMiB": 87.4,
+      "PrivateMiB": 101.35,
+      "Metrics": {
+        "window_visible_ms": 205.0,
+        "first_log_frame_ms": 227.0,
+        "first_frame_presented_ms": 227.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 8,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.36,
+      "PeakWorkingSetMiB": 33.36,
+      "PrivateMiB": 11.03,
+      "Metrics": {
+        "window_visible_ms": 17.0,
+        "first_log_frame_ms": 29.0,
+        "first_frame_presented_ms": 21.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 207,
+      "WorkingSetMiB": 87.43,
+      "PeakWorkingSetMiB": 87.43,
+      "PrivateMiB": 101.1,
+      "Metrics": {
+        "window_visible_ms": 196.0,
+        "first_log_frame_ms": 210.0,
+        "first_frame_presented_ms": 210.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 9,
+      "Order": "RustFirst",
+      "WindowMs": 35,
+      "WorkingSetMiB": 33.21,
+      "PeakWorkingSetMiB": 33.21,
+      "PrivateMiB": 10.86,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 224,
+      "WorkingSetMiB": 86.25,
+      "PeakWorkingSetMiB": 86.25,
+      "PrivateMiB": 101.5,
+      "Metrics": {
+        "window_visible_ms": 208.0,
+        "first_log_frame_ms": 225.0,
+        "first_frame_presented_ms": 225.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 10,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.36,
+      "PeakWorkingSetMiB": 33.36,
+      "PrivateMiB": 10.98,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 41.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 86.64,
+      "PeakWorkingSetMiB": 86.64,
+      "PrivateMiB": 100.82,
+      "Metrics": {
+        "window_visible_ms": 203.0,
+        "first_log_frame_ms": 221.0,
+        "first_frame_presented_ms": 221.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 11,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.18,
+      "PeakWorkingSetMiB": 33.18,
+      "PrivateMiB": 10.75,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 226,
+      "WorkingSetMiB": 87.2,
+      "PeakWorkingSetMiB": 87.2,
+      "PrivateMiB": 100.86,
+      "Metrics": {
+        "window_visible_ms": 218.0,
+        "first_log_frame_ms": 235.0,
+        "first_frame_presented_ms": 228.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 12,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.29,
+      "PeakWorkingSetMiB": 33.29,
+      "PrivateMiB": 10.87,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 33.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 212,
+      "WorkingSetMiB": 87.29,
+      "PeakWorkingSetMiB": 87.29,
+      "PrivateMiB": 100.88,
+      "Metrics": {
+        "window_visible_ms": 196.0,
+        "first_log_frame_ms": 215.0,
+        "first_frame_presented_ms": 208.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 13,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.07,
+      "PeakWorkingSetMiB": 33.07,
+      "PrivateMiB": 10.75,
+      "Metrics": {
+        "window_visible_ms": 13.0,
+        "first_log_frame_ms": 24.0,
+        "first_frame_presented_ms": 17.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 226,
+      "WorkingSetMiB": 87.38,
+      "PeakWorkingSetMiB": 87.38,
+      "PrivateMiB": 100.92,
+      "Metrics": {
+        "window_visible_ms": 207.0,
+        "first_log_frame_ms": 227.0,
+        "first_frame_presented_ms": 220.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 14,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.07,
+      "PeakWorkingSetMiB": 33.07,
+      "PrivateMiB": 10.66,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 31.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 252,
+      "WorkingSetMiB": 86.75,
+      "PeakWorkingSetMiB": 86.75,
+      "PrivateMiB": 99.95,
+      "Metrics": {
+        "window_visible_ms": 228.0,
+        "first_log_frame_ms": 247.0,
+        "first_frame_presented_ms": 240.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 15,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.23,
+      "PeakWorkingSetMiB": 33.23,
+      "PrivateMiB": 10.89,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 25.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 224,
+      "WorkingSetMiB": 87.46,
+      "PeakWorkingSetMiB": 87.46,
+      "PrivateMiB": 100.6,
+      "Metrics": {
+        "window_visible_ms": 207.0,
+        "first_log_frame_ms": 225.0,
+        "first_frame_presented_ms": 219.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 16,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.19,
+      "PeakWorkingSetMiB": 33.19,
+      "PrivateMiB": 10.8,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 30.0,
+        "first_frame_presented_ms": 21.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 226,
+      "WorkingSetMiB": 88.74,
+      "PeakWorkingSetMiB": 88.74,
+      "PrivateMiB": 101.35,
+      "Metrics": {
+        "window_visible_ms": 199.0,
+        "first_log_frame_ms": 216.0,
+        "first_frame_presented_ms": 209.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 17,
+      "Order": "RustFirst",
+      "WindowMs": 135,
+      "WorkingSetMiB": 33.26,
+      "PeakWorkingSetMiB": 33.26,
+      "PrivateMiB": 10.94,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 241,
+      "WorkingSetMiB": 87.26,
+      "PeakWorkingSetMiB": 87.26,
+      "PrivateMiB": 100.89,
+      "Metrics": {
+        "window_visible_ms": 226.0,
+        "first_log_frame_ms": 243.0,
+        "first_frame_presented_ms": 243.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 18,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.16,
+      "PeakWorkingSetMiB": 33.16,
+      "PrivateMiB": 10.77,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 28.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 215,
+      "WorkingSetMiB": 87.69,
+      "PeakWorkingSetMiB": 87.69,
+      "PrivateMiB": 101.26,
+      "Metrics": {
+        "window_visible_ms": 196.0,
+        "first_log_frame_ms": 213.0,
+        "first_frame_presented_ms": 206.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 19,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.21,
+      "PeakWorkingSetMiB": 33.21,
+      "PrivateMiB": 10.85,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 27.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 224,
+      "WorkingSetMiB": 85.48,
+      "PeakWorkingSetMiB": 85.48,
+      "PrivateMiB": 99.8,
+      "Metrics": {
+        "window_visible_ms": 216.0,
+        "first_log_frame_ms": 237.0,
+        "first_frame_presented_ms": 228.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 20,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.3,
+      "PeakWorkingSetMiB": 33.3,
+      "PrivateMiB": 10.99,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 27.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 237,
+      "WorkingSetMiB": 87.26,
+      "PeakWorkingSetMiB": 87.26,
+      "PrivateMiB": 101.05,
+      "Metrics": {
+        "window_visible_ms": 220.0,
+        "first_log_frame_ms": 238.0,
+        "first_frame_presented_ms": 238.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 21,
+      "Order": "RustFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 32.98,
+      "PeakWorkingSetMiB": 32.98,
+      "PrivateMiB": 10.64,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 27.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 242,
+      "WorkingSetMiB": 87.45,
+      "PeakWorkingSetMiB": 87.45,
+      "PrivateMiB": 100.98,
+      "Metrics": {
+        "window_visible_ms": 224.0,
+        "first_log_frame_ms": 242.0,
+        "first_frame_presented_ms": 236.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 22,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 32.96,
+      "PeakWorkingSetMiB": 32.96,
+      "PrivateMiB": 10.59,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 29.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 87.55,
+      "PeakWorkingSetMiB": 87.55,
+      "PrivateMiB": 101.01,
+      "Metrics": {
+        "window_visible_ms": 207.0,
+        "first_log_frame_ms": 221.0,
+        "first_frame_presented_ms": 221.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 23,
+      "Order": "RustFirst",
+      "WindowMs": 21,
+      "WorkingSetMiB": 33.18,
+      "PeakWorkingSetMiB": 33.18,
+      "PrivateMiB": 10.81,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 212,
+      "WorkingSetMiB": 87.82,
+      "PeakWorkingSetMiB": 87.82,
+      "PrivateMiB": 101.42,
+      "Metrics": {
+        "window_visible_ms": 198.0,
+        "first_log_frame_ms": 216.0,
+        "first_frame_presented_ms": 210.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 24,
+      "Order": "NetFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 32.9,
+      "PeakWorkingSetMiB": 32.9,
+      "PrivateMiB": 10.49,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 19.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 215,
+      "WorkingSetMiB": 87.32,
+      "PeakWorkingSetMiB": 87.32,
+      "PrivateMiB": 100.91,
+      "Metrics": {
+        "window_visible_ms": 194.0,
+        "first_log_frame_ms": 209.0,
+        "first_frame_presented_ms": 209.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 25,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 33.22,
+      "PeakWorkingSetMiB": 33.22,
+      "PrivateMiB": 10.88,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 25.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 227,
+      "WorkingSetMiB": 87.21,
+      "PeakWorkingSetMiB": 87.21,
+      "PrivateMiB": 100.96,
+      "Metrics": {
+        "window_visible_ms": 218.0,
+        "first_log_frame_ms": 232.0,
+        "first_frame_presented_ms": 232.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 26,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.25,
+      "PeakWorkingSetMiB": 33.25,
+      "PrivateMiB": 10.85,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 27.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 224,
+      "WorkingSetMiB": 87.34,
+      "PeakWorkingSetMiB": 87.34,
+      "PrivateMiB": 101.25,
+      "Metrics": {
+        "window_visible_ms": 202.0,
+        "first_log_frame_ms": 217.0,
+        "first_frame_presented_ms": 217.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 27,
+      "Order": "RustFirst",
+      "WindowMs": 23,
+      "WorkingSetMiB": 32.89,
+      "PeakWorkingSetMiB": 32.89,
+      "PrivateMiB": 10.48,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 26.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 87.04,
+      "PeakWorkingSetMiB": 87.04,
+      "PrivateMiB": 100.65,
+      "Metrics": {
+        "window_visible_ms": 212.0,
+        "first_log_frame_ms": 227.0,
+        "first_frame_presented_ms": 227.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 28,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 33.12,
+      "PeakWorkingSetMiB": 33.12,
+      "PrivateMiB": 10.72,
+      "Metrics": {
+        "window_visible_ms": 16.0,
+        "first_log_frame_ms": 33.0,
+        "first_frame_presented_ms": 20.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 213,
+      "WorkingSetMiB": 86.85,
+      "PeakWorkingSetMiB": 86.85,
+      "PrivateMiB": 100.66,
+      "Metrics": {
+        "window_visible_ms": 192.0,
+        "first_log_frame_ms": 210.0,
+        "first_frame_presented_ms": 210.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 29,
+      "Order": "RustFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 33.39,
+      "PeakWorkingSetMiB": 33.39,
+      "PrivateMiB": 11.0,
+      "Metrics": {
+        "window_visible_ms": 14.0,
+        "first_log_frame_ms": 25.0,
+        "first_frame_presented_ms": 18.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB .txt",
+      "Case": "RustText 20GiB .txt",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 225,
+      "WorkingSetMiB": 85.89,
+      "PeakWorkingSetMiB": 85.89,
+      "PrivateMiB": 100.07,
+      "Metrics": {
+        "window_visible_ms": 212.0,
+        "first_log_frame_ms": 231.0,
+        "first_frame_presented_ms": 225.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB .txt",
+      "Case": "NetText 20GiB .txt",
+      "RunIndex": 30,
+      "Order": "NetFirst",
+      "WindowMs": 24,
+      "WorkingSetMiB": 32.94,
+      "PeakWorkingSetMiB": 32.94,
+      "PrivateMiB": 10.58,
+      "Metrics": {
+        "window_visible_ms": 15.0,
+        "first_log_frame_ms": 32.0,
+        "first_frame_presented_ms": 19.0
+      }
+    }
+  ],
+  "rawE2ERuns": [
+    {
+      "App": "RustText",
+      "Scenario": "10GiB E2E",
+      "Case": "RustText 10GiB E2E",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 216,
+      "WorkingSetMiB": 84.05,
+      "PeakWorkingSetMiB": 91.54,
+      "PrivateMiB": 96.41,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 97.68,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 23105.0,
+        "first_log_frame_ms": 229.0,
+        "mem_after_ops_ws_mib": 88.23,
+        "mem_after_ops_priv_mib": 100.15,
+        "mem_first_frame_peak_ws_mib": 79.18,
+        "jump_eof_ms": 12.0,
+        "window_visible_ms": 208.0,
+        "index_ready_ms": 6036.0,
+        "scroll_prev_ms": 12.0,
+        "mem_after_ops_peak_ws_mib": 91.54,
+        "jump_50pct_ms": 5.0,
+        "mem_index_ready_priv_mib": 100.93,
+        "mem_first_frame_ws_mib": 79.18,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.91,
+        "mem_index_ready_peak_ws_mib": 90.16,
+        "first_frame_presented_ms": 217.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB E2E",
+      "Case": "NetText 10GiB E2E",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 44,
+      "WorkingSetMiB": 48.89,
+      "PeakWorkingSetMiB": 48.89,
+      "PrivateMiB": 25.7,
+      "Metrics": {
+        "first_frame_presented_ms": 19.0,
+        "mem_index_ready_ws_mib": 40.31,
+        "jump_50pct_ms": 3.0,
+        "mem_index_ready_priv_mib": 17.62,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 48.89,
+        "jump_eof_ms": 9.0,
+        "mem_first_frame_peak_ws_mib": 24.3,
+        "mem_index_ready_peak_ws_mib": 40.31,
+        "mem_after_ops_ws_mib": 48.89,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 15.0,
+        "mem_after_ops_priv_mib": 25.7,
+        "scroll_prev_ms": 2.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 24.3,
+        "mem_first_frame_priv_mib": 10.92,
+        "search_eof_ms": 3082.0,
+        "index_ready_ms": 2158.0,
+        "first_log_frame_ms": 42.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB E2E",
+      "Case": "RustText 10GiB E2E",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 229,
+      "WorkingSetMiB": 87.77,
+      "PeakWorkingSetMiB": 92.08,
+      "PrivateMiB": 99.66,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 95.05,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 22815.0,
+        "first_log_frame_ms": 221.0,
+        "mem_after_ops_ws_mib": 87.77,
+        "mem_after_ops_priv_mib": 99.66,
+        "mem_first_frame_peak_ws_mib": 74.48,
+        "jump_eof_ms": 11.0,
+        "window_visible_ms": 207.0,
+        "index_ready_ms": 6195.0,
+        "scroll_prev_ms": 11.0,
+        "mem_after_ops_peak_ws_mib": 92.08,
+        "jump_50pct_ms": 10.0,
+        "mem_index_ready_priv_mib": 100.91,
+        "mem_first_frame_ws_mib": 74.48,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.89,
+        "mem_index_ready_peak_ws_mib": 90.11,
+        "first_frame_presented_ms": 221.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB E2E",
+      "Case": "NetText 10GiB E2E",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 31,
+      "WorkingSetMiB": 48.5,
+      "PeakWorkingSetMiB": 48.5,
+      "PrivateMiB": 25.47,
+      "Metrics": {
+        "first_frame_presented_ms": 18.0,
+        "mem_index_ready_ws_mib": 39.92,
+        "jump_50pct_ms": 4.0,
+        "mem_index_ready_priv_mib": 17.33,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 48.5,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 21.44,
+        "mem_index_ready_peak_ws_mib": 39.92,
+        "mem_after_ops_ws_mib": 48.5,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 13.0,
+        "mem_after_ops_priv_mib": 25.47,
+        "scroll_prev_ms": 2.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.44,
+        "mem_first_frame_priv_mib": 10.34,
+        "search_eof_ms": 2459.0,
+        "index_ready_ms": 1976.0,
+        "first_log_frame_ms": 24.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB E2E",
+      "Case": "RustText 10GiB E2E",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 198,
+      "WorkingSetMiB": 84.14,
+      "PeakWorkingSetMiB": 90.59,
+      "PrivateMiB": 96.47,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 97.3,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 17918.0,
+        "first_log_frame_ms": 204.0,
+        "mem_after_ops_ws_mib": 88.31,
+        "mem_after_ops_priv_mib": 100.21,
+        "mem_first_frame_peak_ws_mib": 76.73,
+        "jump_eof_ms": 13.0,
+        "window_visible_ms": 190.0,
+        "index_ready_ms": 5181.0,
+        "scroll_prev_ms": 11.0,
+        "mem_after_ops_peak_ws_mib": 90.59,
+        "jump_50pct_ms": 5.0,
+        "mem_index_ready_priv_mib": 100.98,
+        "mem_first_frame_ws_mib": 76.73,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.98,
+        "mem_index_ready_peak_ws_mib": 90.59,
+        "first_frame_presented_ms": 204.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB E2E",
+      "Case": "NetText 10GiB E2E",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 48.75,
+      "PeakWorkingSetMiB": 48.75,
+      "PrivateMiB": 25.67,
+      "Metrics": {
+        "first_frame_presented_ms": 18.0,
+        "mem_index_ready_ws_mib": 40.2,
+        "jump_50pct_ms": 2.0,
+        "mem_index_ready_priv_mib": 17.59,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 48.75,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 21.75,
+        "mem_index_ready_peak_ws_mib": 40.2,
+        "mem_after_ops_ws_mib": 48.75,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 25.67,
+        "scroll_prev_ms": 7.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.75,
+        "mem_first_frame_priv_mib": 10.64,
+        "search_eof_ms": 2607.0,
+        "index_ready_ms": 1975.0,
+        "first_log_frame_ms": 25.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB E2E",
+      "Case": "RustText 10GiB E2E",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 214,
+      "WorkingSetMiB": 84.3,
+      "PeakWorkingSetMiB": 92.45,
+      "PrivateMiB": 96.63,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 96.61,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 17796.0,
+        "first_log_frame_ms": 211.0,
+        "mem_after_ops_ws_mib": 88.51,
+        "mem_after_ops_priv_mib": 100.39,
+        "mem_first_frame_peak_ws_mib": 76.14,
+        "jump_eof_ms": 12.0,
+        "window_visible_ms": 195.0,
+        "index_ready_ms": 5207.0,
+        "scroll_prev_ms": 12.0,
+        "mem_after_ops_peak_ws_mib": 92.45,
+        "jump_50pct_ms": 6.0,
+        "mem_index_ready_priv_mib": 100.71,
+        "mem_first_frame_ws_mib": 76.14,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.73,
+        "mem_index_ready_peak_ws_mib": 90.46,
+        "first_frame_presented_ms": 205.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB E2E",
+      "Case": "NetText 10GiB E2E",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 48.45,
+      "PeakWorkingSetMiB": 48.45,
+      "PrivateMiB": 25.32,
+      "Metrics": {
+        "first_frame_presented_ms": 18.0,
+        "mem_index_ready_ws_mib": 39.88,
+        "jump_50pct_ms": 2.0,
+        "mem_index_ready_priv_mib": 17.25,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 48.45,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 21.46,
+        "mem_index_ready_peak_ws_mib": 39.88,
+        "mem_after_ops_ws_mib": 48.45,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 25.32,
+        "scroll_prev_ms": 8.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.46,
+        "mem_first_frame_priv_mib": 10.35,
+        "search_eof_ms": 2475.0,
+        "index_ready_ms": 1963.0,
+        "first_log_frame_ms": 26.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "10GiB E2E",
+      "Case": "RustText 10GiB E2E",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 209,
+      "WorkingSetMiB": 62.55,
+      "PeakWorkingSetMiB": 92.43,
+      "PrivateMiB": 58.09,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 97.05,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 21644.0,
+        "first_log_frame_ms": 212.0,
+        "mem_after_ops_ws_mib": 88.25,
+        "mem_after_ops_priv_mib": 100.1,
+        "mem_first_frame_peak_ws_mib": 77.29,
+        "jump_eof_ms": 11.0,
+        "window_visible_ms": 196.0,
+        "index_ready_ms": 5210.0,
+        "scroll_prev_ms": 11.0,
+        "mem_after_ops_peak_ws_mib": 92.43,
+        "jump_50pct_ms": 10.0,
+        "mem_index_ready_priv_mib": 100.23,
+        "mem_first_frame_ws_mib": 77.29,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.3,
+        "mem_index_ready_peak_ws_mib": 90.47,
+        "first_frame_presented_ms": 206.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "10GiB E2E",
+      "Case": "NetText 10GiB E2E",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 28,
+      "WorkingSetMiB": 48.83,
+      "PeakWorkingSetMiB": 48.83,
+      "PrivateMiB": 25.81,
+      "Metrics": {
+        "first_frame_presented_ms": 19.0,
+        "mem_index_ready_ws_mib": 40.2,
+        "jump_50pct_ms": 3.0,
+        "mem_index_ready_priv_mib": 17.67,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 48.83,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 21.71,
+        "mem_index_ready_peak_ws_mib": 40.2,
+        "mem_after_ops_ws_mib": 48.83,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 15.0,
+        "mem_after_ops_priv_mib": 25.81,
+        "scroll_prev_ms": 2.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.71,
+        "mem_first_frame_priv_mib": 10.66,
+        "search_eof_ms": 2450.0,
+        "index_ready_ms": 1973.0,
+        "first_log_frame_ms": 25.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "RustText Mixed 40MB+10GiB",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 222,
+      "WorkingSetMiB": 194.67,
+      "PeakWorkingSetMiB": 207.74,
+      "PrivateMiB": 206.91,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 204.99,
+        "editor_ready_ms": 410.0,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 25423.0,
+        "first_log_frame_ms": 418.0,
+        "mem_after_ops_ws_mib": 194.67,
+        "mem_after_ops_priv_mib": 206.91,
+        "document_ready_ms": 410.0,
+        "jump_eof_ms": 12.0,
+        "window_visible_ms": 201.0,
+        "index_ready_ms": 6370.0,
+        "scroll_prev_ms": 17.0,
+        "mem_first_frame_peak_ws_mib": 207.74,
+        "mem_after_ops_peak_ws_mib": 207.74,
+        "jump_50pct_ms": 8.0,
+        "mem_index_ready_priv_mib": 204.96,
+        "mem_first_frame_ws_mib": 189.78,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 191.68,
+        "mem_index_ready_peak_ws_mib": 207.74,
+        "first_frame_presented_ms": 214.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "NetText Mixed 40MB+10GiB",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 133.15,
+      "PeakWorkingSetMiB": 152.91,
+      "PrivateMiB": 108.64,
+      "Metrics": {
+        "first_frame_presented_ms": 20.0,
+        "mem_index_ready_ws_mib": 124.55,
+        "jump_50pct_ms": 3.0,
+        "mem_index_ready_priv_mib": 100.49,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 152.91,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 152.91,
+        "mem_index_ready_peak_ws_mib": 152.91,
+        "mem_after_ops_ws_mib": 133.15,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 15.0,
+        "mem_after_ops_priv_mib": 108.64,
+        "scroll_prev_ms": 7.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 119.3,
+        "mem_first_frame_priv_mib": 96.96,
+        "search_eof_ms": 2468.0,
+        "index_ready_ms": 1994.0,
+        "first_log_frame_ms": 69.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "RustText Mixed 40MB+10GiB",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 228,
+      "WorkingSetMiB": 194.26,
+      "PeakWorkingSetMiB": 207.7,
+      "PrivateMiB": 206.61,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 204.91,
+        "editor_ready_ms": 422.0,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 23266.0,
+        "first_log_frame_ms": 430.0,
+        "mem_after_ops_ws_mib": 194.26,
+        "mem_after_ops_priv_mib": 206.61,
+        "document_ready_ms": 422.0,
+        "jump_eof_ms": 12.0,
+        "window_visible_ms": 212.0,
+        "index_ready_ms": 6322.0,
+        "scroll_prev_ms": 12.0,
+        "mem_first_frame_peak_ws_mib": 207.7,
+        "mem_after_ops_peak_ws_mib": 207.7,
+        "jump_50pct_ms": 13.0,
+        "mem_index_ready_priv_mib": 205.65,
+        "mem_first_frame_ws_mib": 189.97,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 192.44,
+        "mem_index_ready_peak_ws_mib": 207.7,
+        "first_frame_presented_ms": 224.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "NetText Mixed 40MB+10GiB",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 25,
+      "WorkingSetMiB": 133.2,
+      "PeakWorkingSetMiB": 153.1,
+      "PrivateMiB": 108.66,
+      "Metrics": {
+        "first_frame_presented_ms": 19.0,
+        "mem_index_ready_ws_mib": 124.59,
+        "jump_50pct_ms": 3.0,
+        "mem_index_ready_priv_mib": 100.46,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 153.1,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 153.1,
+        "mem_index_ready_peak_ws_mib": 153.1,
+        "mem_after_ops_ws_mib": 133.2,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 108.66,
+        "scroll_prev_ms": 6.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 119.31,
+        "mem_first_frame_priv_mib": 96.15,
+        "search_eof_ms": 2506.0,
+        "index_ready_ms": 2020.0,
+        "first_log_frame_ms": 70.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "RustText Mixed 40MB+10GiB",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 218,
+      "WorkingSetMiB": 193.85,
+      "PeakWorkingSetMiB": 208.73,
+      "PrivateMiB": 206.09,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 204.97,
+        "editor_ready_ms": 412.0,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 23144.0,
+        "first_log_frame_ms": 424.0,
+        "mem_after_ops_ws_mib": 193.85,
+        "mem_after_ops_priv_mib": 206.09,
+        "document_ready_ms": 412.0,
+        "jump_eof_ms": 12.0,
+        "window_visible_ms": 202.0,
+        "index_ready_ms": 6650.0,
+        "scroll_prev_ms": 13.0,
+        "mem_first_frame_peak_ws_mib": 208.73,
+        "mem_after_ops_peak_ws_mib": 208.73,
+        "jump_50pct_ms": 7.0,
+        "mem_index_ready_priv_mib": 205.85,
+        "mem_first_frame_ws_mib": 190.49,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 192.63,
+        "mem_index_ready_peak_ws_mib": 208.73,
+        "first_frame_presented_ms": 216.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "NetText Mixed 40MB+10GiB",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 26,
+      "WorkingSetMiB": 133.03,
+      "PeakWorkingSetMiB": 152.93,
+      "PrivateMiB": 108.81,
+      "Metrics": {
+        "first_frame_presented_ms": 19.0,
+        "mem_index_ready_ws_mib": 124.41,
+        "jump_50pct_ms": 2.0,
+        "mem_index_ready_priv_mib": 100.62,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 152.93,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 152.93,
+        "mem_index_ready_peak_ws_mib": 152.93,
+        "mem_after_ops_ws_mib": 133.03,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 108.81,
+        "scroll_prev_ms": 5.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 119.14,
+        "mem_first_frame_priv_mib": 97.05,
+        "search_eof_ms": 2479.0,
+        "index_ready_ms": 2009.0,
+        "first_log_frame_ms": 76.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "RustText Mixed 40MB+10GiB",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 232,
+      "WorkingSetMiB": 190.04,
+      "PeakWorkingSetMiB": 207.35,
+      "PrivateMiB": 202.68,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 204.5,
+        "editor_ready_ms": 421.0,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 21042.0,
+        "first_log_frame_ms": 428.0,
+        "mem_after_ops_ws_mib": 194.16,
+        "mem_after_ops_priv_mib": 206.4,
+        "document_ready_ms": 421.0,
+        "jump_eof_ms": 10.0,
+        "window_visible_ms": 216.0,
+        "index_ready_ms": 6337.0,
+        "scroll_prev_ms": 13.0,
+        "mem_first_frame_peak_ws_mib": 207.35,
+        "mem_after_ops_peak_ws_mib": 207.35,
+        "jump_50pct_ms": 11.0,
+        "mem_index_ready_priv_mib": 204.62,
+        "mem_first_frame_ws_mib": 189.61,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 191.43,
+        "mem_index_ready_peak_ws_mib": 207.35,
+        "first_frame_presented_ms": 231.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "NetText Mixed 40MB+10GiB",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 133.19,
+      "PeakWorkingSetMiB": 152.88,
+      "PrivateMiB": 108.79,
+      "Metrics": {
+        "first_frame_presented_ms": 18.0,
+        "mem_index_ready_ws_mib": 124.66,
+        "jump_50pct_ms": 3.0,
+        "mem_index_ready_priv_mib": 100.65,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 152.88,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 152.88,
+        "mem_index_ready_peak_ws_mib": 152.88,
+        "mem_after_ops_ws_mib": 133.19,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 108.79,
+        "scroll_prev_ms": 8.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 119.04,
+        "mem_first_frame_priv_mib": 96.16,
+        "search_eof_ms": 2449.0,
+        "index_ready_ms": 1996.0,
+        "first_log_frame_ms": 67.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "RustText Mixed 40MB+10GiB",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 206,
+      "WorkingSetMiB": 189.7,
+      "PeakWorkingSetMiB": 208.98,
+      "PrivateMiB": 203.42,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 206.62,
+        "editor_ready_ms": 408.0,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 20254.0,
+        "first_log_frame_ms": 416.0,
+        "mem_after_ops_ws_mib": 193.95,
+        "mem_after_ops_priv_mib": 207.23,
+        "document_ready_ms": 408.0,
+        "jump_eof_ms": 11.0,
+        "window_visible_ms": 197.0,
+        "index_ready_ms": 5481.0,
+        "scroll_prev_ms": 10.0,
+        "mem_first_frame_peak_ws_mib": 208.98,
+        "mem_after_ops_peak_ws_mib": 208.98,
+        "jump_50pct_ms": 10.0,
+        "mem_index_ready_priv_mib": 206.83,
+        "mem_first_frame_ws_mib": 191.16,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 192.64,
+        "mem_index_ready_peak_ws_mib": 208.98,
+        "first_frame_presented_ms": 210.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "Mixed 40MB+10GiB",
+      "Case": "NetText Mixed 40MB+10GiB",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 27,
+      "WorkingSetMiB": 133.29,
+      "PeakWorkingSetMiB": 153.01,
+      "PrivateMiB": 108.98,
+      "Metrics": {
+        "first_frame_presented_ms": 18.0,
+        "mem_index_ready_ws_mib": 124.66,
+        "jump_50pct_ms": 3.0,
+        "mem_index_ready_priv_mib": 100.72,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 153.01,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 153.01,
+        "mem_index_ready_peak_ws_mib": 153.01,
+        "mem_after_ops_ws_mib": 133.29,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 108.98,
+        "scroll_prev_ms": 5.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 119.32,
+        "mem_first_frame_priv_mib": 96.45,
+        "search_eof_ms": 2445.0,
+        "index_ready_ms": 2006.0,
+        "first_log_frame_ms": 72.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB E2E",
+      "Case": "RustText 20GiB E2E",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 215,
+      "WorkingSetMiB": 81.23,
+      "PeakWorkingSetMiB": 90.18,
+      "PrivateMiB": 91.84,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 96.16,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 53583.0,
+        "first_log_frame_ms": 226.0,
+        "mem_after_ops_ws_mib": 88.73,
+        "mem_after_ops_priv_mib": 99.69,
+        "mem_first_frame_peak_ws_mib": 77.53,
+        "jump_eof_ms": 14.0,
+        "window_visible_ms": 208.0,
+        "index_ready_ms": 12662.0,
+        "scroll_prev_ms": 9.0,
+        "mem_after_ops_peak_ws_mib": 90.18,
+        "jump_50pct_ms": 6.0,
+        "mem_index_ready_priv_mib": 99.06,
+        "mem_first_frame_ws_mib": 77.53,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 86.97,
+        "mem_index_ready_peak_ws_mib": 90.03,
+        "first_frame_presented_ms": 220.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB E2E",
+      "Case": "NetText 20GiB E2E",
+      "RunIndex": 1,
+      "Order": "RustFirst",
+      "WindowMs": 22,
+      "WorkingSetMiB": 55.48,
+      "PeakWorkingSetMiB": 55.48,
+      "PrivateMiB": 32.45,
+      "Metrics": {
+        "first_frame_presented_ms": 19.0,
+        "mem_index_ready_ws_mib": 40.31,
+        "jump_50pct_ms": 5.0,
+        "mem_index_ready_priv_mib": 17.79,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 55.48,
+        "jump_eof_ms": 3.0,
+        "mem_first_frame_peak_ws_mib": 21.48,
+        "mem_index_ready_peak_ws_mib": 40.31,
+        "mem_after_ops_ws_mib": 55.48,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 32.45,
+        "scroll_prev_ms": 2.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.48,
+        "mem_first_frame_priv_mib": 10.4,
+        "search_eof_ms": 5368.0,
+        "index_ready_ms": 5508.0,
+        "first_log_frame_ms": 25.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB E2E",
+      "Case": "RustText 20GiB E2E",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 217,
+      "WorkingSetMiB": 83.59,
+      "PeakWorkingSetMiB": 90.29,
+      "PrivateMiB": 96.07,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 97.22,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 44390.0,
+        "first_log_frame_ms": 233.0,
+        "mem_after_ops_ws_mib": 87.72,
+        "mem_after_ops_priv_mib": 99.76,
+        "mem_first_frame_peak_ws_mib": 77.93,
+        "jump_eof_ms": 14.0,
+        "window_visible_ms": 209.0,
+        "index_ready_ms": 10745.0,
+        "scroll_prev_ms": 13.0,
+        "mem_after_ops_peak_ws_mib": 90.29,
+        "jump_50pct_ms": 5.0,
+        "mem_index_ready_priv_mib": 100.4,
+        "mem_first_frame_ws_mib": 77.93,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.35,
+        "mem_index_ready_peak_ws_mib": 90.29,
+        "first_frame_presented_ms": 233.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB E2E",
+      "Case": "NetText 20GiB E2E",
+      "RunIndex": 2,
+      "Order": "NetFirst",
+      "WindowMs": 28,
+      "WorkingSetMiB": 55.63,
+      "PeakWorkingSetMiB": 55.63,
+      "PrivateMiB": 32.48,
+      "Metrics": {
+        "first_frame_presented_ms": 22.0,
+        "mem_index_ready_ws_mib": 39.87,
+        "jump_50pct_ms": 2.0,
+        "mem_index_ready_priv_mib": 17.26,
+        "cancel_search_ms": 1.0,
+        "mem_after_ops_peak_ws_mib": 55.63,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 21.44,
+        "mem_index_ready_peak_ws_mib": 39.87,
+        "mem_after_ops_ws_mib": 55.63,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 18.0,
+        "mem_after_ops_priv_mib": 32.48,
+        "scroll_prev_ms": 6.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.44,
+        "mem_first_frame_priv_mib": 10.34,
+        "search_eof_ms": 5821.0,
+        "index_ready_ms": 3917.0,
+        "first_log_frame_ms": 32.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB E2E",
+      "Case": "RustText 20GiB E2E",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 244,
+      "WorkingSetMiB": 87.84,
+      "PeakWorkingSetMiB": 90.14,
+      "PrivateMiB": 99.68,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 98.04,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 67667.0,
+        "first_log_frame_ms": 245.0,
+        "mem_after_ops_ws_mib": 87.84,
+        "mem_after_ops_priv_mib": 99.68,
+        "mem_first_frame_peak_ws_mib": 78.08,
+        "jump_eof_ms": 11.0,
+        "window_visible_ms": 226.0,
+        "index_ready_ms": 12596.0,
+        "scroll_prev_ms": 13.0,
+        "mem_after_ops_peak_ws_mib": 90.14,
+        "jump_50pct_ms": 13.0,
+        "mem_index_ready_priv_mib": 100.11,
+        "mem_first_frame_ws_mib": 78.08,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.03,
+        "mem_index_ready_peak_ws_mib": 90.14,
+        "first_frame_presented_ms": 238.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB E2E",
+      "Case": "NetText 20GiB E2E",
+      "RunIndex": 3,
+      "Order": "RustFirst",
+      "WindowMs": 28,
+      "WorkingSetMiB": 55.96,
+      "PeakWorkingSetMiB": 55.96,
+      "PrivateMiB": 32.77,
+      "Metrics": {
+        "first_frame_presented_ms": 18.0,
+        "mem_index_ready_ws_mib": 40.26,
+        "jump_50pct_ms": 5.0,
+        "mem_index_ready_priv_mib": 17.61,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 55.96,
+        "jump_eof_ms": 3.0,
+        "mem_first_frame_peak_ws_mib": 21.68,
+        "mem_index_ready_peak_ws_mib": 40.26,
+        "mem_after_ops_ws_mib": 55.96,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 14.0,
+        "mem_after_ops_priv_mib": 32.77,
+        "scroll_prev_ms": 5.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.68,
+        "mem_first_frame_priv_mib": 10.61,
+        "search_eof_ms": 6434.0,
+        "index_ready_ms": 4780.0,
+        "first_log_frame_ms": 25.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB E2E",
+      "Case": "RustText 20GiB E2E",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 369,
+      "WorkingSetMiB": 88.62,
+      "PeakWorkingSetMiB": 89.93,
+      "PrivateMiB": 100.2,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 96.69,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 57470.0,
+        "first_log_frame_ms": 263.0,
+        "mem_after_ops_ws_mib": 88.62,
+        "mem_after_ops_priv_mib": 100.2,
+        "mem_first_frame_peak_ws_mib": 77.3,
+        "jump_eof_ms": 12.0,
+        "window_visible_ms": 243.0,
+        "index_ready_ms": 13089.0,
+        "scroll_prev_ms": 13.0,
+        "mem_after_ops_peak_ws_mib": 89.93,
+        "jump_50pct_ms": 6.0,
+        "mem_index_ready_priv_mib": 99.93,
+        "mem_first_frame_ws_mib": 77.3,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 87.17,
+        "mem_index_ready_peak_ws_mib": 89.89,
+        "first_frame_presented_ms": 251.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB E2E",
+      "Case": "NetText 20GiB E2E",
+      "RunIndex": 4,
+      "Order": "NetFirst",
+      "WindowMs": 55,
+      "WorkingSetMiB": 55.95,
+      "PeakWorkingSetMiB": 56.64,
+      "PrivateMiB": 33.57,
+      "Metrics": {
+        "first_frame_presented_ms": 30.0,
+        "mem_index_ready_ws_mib": 40.74,
+        "jump_50pct_ms": 4.0,
+        "mem_index_ready_priv_mib": 18.18,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 56.64,
+        "jump_eof_ms": 9.0,
+        "mem_first_frame_peak_ws_mib": 21.46,
+        "mem_index_ready_peak_ws_mib": 40.74,
+        "mem_after_ops_ws_mib": 55.95,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 25.0,
+        "mem_after_ops_priv_mib": 33.57,
+        "scroll_prev_ms": 4.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.46,
+        "mem_first_frame_priv_mib": 10.4,
+        "search_eof_ms": 7728.0,
+        "index_ready_ms": 6282.0,
+        "first_log_frame_ms": 39.0,
+        "search_eof_complete": 1.0
+      }
+    },
+    {
+      "App": "RustText",
+      "Scenario": "20GiB E2E",
+      "Case": "RustText 20GiB E2E",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 234,
+      "WorkingSetMiB": 83.9,
+      "PeakWorkingSetMiB": 90.69,
+      "PrivateMiB": 96.32,
+      "Metrics": {
+        "mem_first_frame_priv_mib": 95.36,
+        "search_eof_hits": 1.0,
+        "search_eof_ms": 55312.0,
+        "first_log_frame_ms": 226.0,
+        "mem_after_ops_ws_mib": 88.11,
+        "mem_after_ops_priv_mib": 99.96,
+        "mem_first_frame_peak_ws_mib": 74.74,
+        "jump_eof_ms": 11.0,
+        "window_visible_ms": 212.0,
+        "index_ready_ms": 13063.0,
+        "scroll_prev_ms": 10.0,
+        "mem_after_ops_peak_ws_mib": 90.69,
+        "jump_50pct_ms": 13.0,
+        "mem_index_ready_priv_mib": 101.23,
+        "mem_first_frame_ws_mib": 74.74,
+        "cancel_search_ms": 0.0,
+        "e2e_done": 1.0,
+        "search_eof_complete": 1.0,
+        "mem_index_ready_ws_mib": 88.0,
+        "mem_index_ready_peak_ws_mib": 90.69,
+        "first_frame_presented_ms": 226.0
+      }
+    },
+    {
+      "App": "NetText",
+      "Scenario": "20GiB E2E",
+      "Case": "NetText 20GiB E2E",
+      "RunIndex": 5,
+      "Order": "RustFirst",
+      "WindowMs": 29,
+      "WorkingSetMiB": 55.99,
+      "PeakWorkingSetMiB": 55.99,
+      "PrivateMiB": 32.95,
+      "Metrics": {
+        "first_frame_presented_ms": 22.0,
+        "mem_index_ready_ws_mib": 40.33,
+        "jump_50pct_ms": 2.0,
+        "mem_index_ready_priv_mib": 17.73,
+        "cancel_search_ms": 0.0,
+        "mem_after_ops_peak_ws_mib": 55.99,
+        "jump_eof_ms": 2.0,
+        "mem_first_frame_peak_ws_mib": 21.69,
+        "mem_index_ready_peak_ws_mib": 40.33,
+        "mem_after_ops_ws_mib": 55.99,
+        "search_eof_hits": 1.0,
+        "window_visible_ms": 16.0,
+        "mem_after_ops_priv_mib": 32.95,
+        "scroll_prev_ms": 2.0,
+        "e2e_done": 1.0,
+        "mem_first_frame_ws_mib": 21.69,
+        "mem_first_frame_priv_mib": 10.57,
+        "search_eof_ms": 6334.0,
+        "index_ready_ms": 4766.0,
+        "first_log_frame_ms": 31.0,
+        "search_eof_complete": 1.0
+      }
+    }
+  ],
+  "partialRerunNote": "Заново прогнаны только 5-кратные E2E-серии NetText и CoreBench; стартовые серии (1-й кадр при открытии не индексирует весь файл) и базовые замеры RustText (`a97680f`) сохранены с предыдущего полного прогона, так как полный цикл длится 30–40 минут, а автор хотел уже спать."
+}

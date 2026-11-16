@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <StripSymbols>true</StripSymbols>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NetText.Tests" />
+    <InternalsVisibleTo Include="CoreBench" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\native\win-x64\Scintilla.dll" CopyToOutputDirectory="PreserveNewest" Link="Scintilla.dll" />
+    <None Include="..\..\native\win-x64\Lexilla.dll" CopyToOutputDirectory="PreserveNewest" Link="Lexilla.dll" />
+    <None Include="..\..\native\win-x64\License.txt" CopyToOutputDirectory="PreserveNewest" Link="Scintilla-License.txt" />
+  </ItemGroup>
+
+</Project>
