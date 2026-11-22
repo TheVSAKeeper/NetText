@@ -47,7 +47,7 @@ function Write-ComparisonMeasurementReport($Data, [string]$Path, [string]$RawJso
         '',
         '## GUI',
         '',
-        "Окно обнаружено внешней пробой Windows, ответ означает успешный ``WM_NULL``. Память снята примерно через $($Data.memorySampleTargetMs) мс от запуска процесса. Cold относится к кэшу приложения, состояние кэша ОС естественное.",
+        "Окно обнаружено внешней пробой Windows, ответ означает успешный ``WM_NULL``, ``readyMs`` – готовность открытого файла (маркер NetText / запись ``recent-files.json`` RustText). Память снята примерно через $($Data.memorySampleTargetMs) мс от запуска процесса. Cold относится к кэшу приложения, состояние кэша ОС естественное.",
         '',
         'В ячейках медиана [минимум–максимум]. Последний столбец – медиана и размах отношений внутри каждой пары.',
         '',
@@ -56,7 +56,12 @@ function Write-ComparisonMeasurementReport($Data, [string]$Path, [string]$RawJso
     ))
     foreach ($scenario in 'empty-cold', 'empty', 'text', 'json', 'log') {
         $rows = @($Data.guiRuns | Where-Object scenario -eq $scenario)
-        foreach ($metric in 'windowMs', 'responsiveMs', 'workingSetBytes', 'privateBytes', 'peakWorkingSetBytes') {
+        $metrics = @('windowMs', 'responsiveMs')
+        if (@($rows | Where-Object { $null -ne $_.readyMs }).Count -gt 0) {
+            $metrics += 'readyMs'
+        }
+        $metrics += @('workingSetBytes', 'privateBytes', 'peakWorkingSetBytes')
+        foreach ($metric in $metrics) {
             $unit = if ($metric.EndsWith('Bytes')) { 1MB } else { 1 }
             $label = if ($unit -eq 1) { "$metric, мс" } else { "$metric, MiB" }
             $lines.Add("| $scenario | $label | $(Format-ComparisonPairs $rows $metric $Data.iterations $unit) |")

@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 param(
-    [string]$RustVersion = '2.4.0',
+    [string]$RustVersion = '2.6.1',
     [string]$RustRevision,
     [string]$RustTextRepository = (Join-Path $PSScriptRoot '../../RustText'),
     [ValidateRange(2, 100)][int]$Iterations = 6,
@@ -40,6 +40,7 @@ $RustTextRepository = (Resolve-Path -LiteralPath $RustTextRepository).Path
 $pinnedRustRevisions = @{
     '2.3.0' = 'd5e53ed245becbbfe79e8f6f15ce16cda52ebd59'
     '2.4.0' = 'b2e93831443d4cbe72ff33d20cd8a61bace2a0d8'
+    '2.6.1' = '6e7687d427ab2179b7466071309389e35cb5a87b'
 }
 $rustTargetRef = if ($RustRevision) {
     $RustRevision
