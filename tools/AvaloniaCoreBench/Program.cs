@@ -75,7 +75,7 @@ var netQuery = new SearchQuery(query, false, true, false, false);
 var source = new[] { new SearchSource(1, editorText) };
 Measure("editor-find-all", () =>
 {
-    var result = TextOperations.Find(editorText, TextOperations.BuildRegex(rustQuery), records, CancellationToken.None);
+    var result = TextOperations.Find(editorText, CreateRustMatcher(rustQuery), records, CancellationToken.None);
     Require(!result.TimedOut && result.Count == records, "Incomplete RustText editor search.");
     return result.Hits.Select(h => (h.Offset, h.Length)).ToArray();
 }, () =>
@@ -87,7 +87,7 @@ Measure("editor-find-all", () =>
 
 Measure("editor-replace-all-string", () =>
 {
-    var result = TextOperations.ReplaceAll(editorText, TextOperations.BuildRegex(rustQuery), replacement, false);
+    var result = TextOperations.ReplaceAll(editorText, CreateRustMatcher(rustQuery), replacement, false);
     return (result.Text, result.Count);
 }, () =>
 {
@@ -122,12 +122,24 @@ void Measure<T>(string name, Func<T> rust, Func<T> net, Action<T> check)
     }
 }
 
+#if RUSTTEXT_TEXT_MATCHER
+static TextMatcher CreateRustMatcher(SearchOptions options) => new(options);
+#else
+static System.Text.RegularExpressions.Regex CreateRustMatcher(SearchOptions options) => TextOperations.BuildRegex(options);
+#endif
+
 static SearchOutput SearchRust(string path, LogCase scenario)
 {
     using var file = LogDataReader.Open(path);
     var reader = new LogDataReader(file, TextEncodingKind.Utf8);
-    var regex = TextOperations.BuildRegex(new SearchOptions(scenario.Pattern, scenario.Regex, true, false));
-#if RUSTTEXT_240
+    var options = new SearchOptions(scenario.Pattern, scenario.Regex, true, false);
+#if RUSTTEXT_BUFFERED_LOG_SEARCH
+    var result = reader.Search(options, new LogSearchCursor(0, 0), file.Length, 1, 32, long.MaxValue, CancellationToken.None);
+    Require(result.Message is null, result.Message ?? "RustText log search failed.");
+    return new(result.Hits.Select(hit => hit.Offset).ToArray(), result.NextCursor?.Offset ?? file.Length, !result.HasMore);
+#else
+    var regex = TextOperations.BuildRegex(options);
+#if RUSTTEXT_SEQUENTIAL_SCAN
     using var scan = reader.BeginSequentialScan();
 #endif
     var offsets = new List<long>();
@@ -136,7 +148,7 @@ static SearchOutput SearchRust(string path, LogCase scenario)
     long cursor = 0;
     while (cursor < file.Length)
     {
-#if RUSTTEXT_240
+#if RUSTTEXT_SEQUENTIAL_SCAN
         var page = scan.ReadPage(cursor);
 #else
         var page = reader.ReadPage(cursor);
@@ -165,6 +177,7 @@ static SearchOutput SearchRust(string path, LogCase scenario)
         cursor = page.NextOffset;
     }
     return new(offsets.ToArray(), cursor, cursor == file.Length);
+#endif
 }
 
 static LogFixture CreateLog(string path, int size)

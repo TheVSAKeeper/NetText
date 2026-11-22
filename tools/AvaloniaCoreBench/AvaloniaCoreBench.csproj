@@ -9,15 +9,25 @@
     <OptimizationPreference>Speed</OptimizationPreference>
     <NetTextProject Condition="'$(NetTextProject)' == ''">..\..\src\NetText\NetText.csproj</NetTextProject>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RustVersion)' == '2.4.0'">
-    <DefineConstants>$(DefineConstants);RUSTTEXT_240</DefineConstants>
+  <PropertyGroup>
+    <_RustLogReader>$(RustSource)\src\RustText\Logs\LogDataReader.cs</_RustLogReader>
+    <_HasSequentialScan Condition="Exists('$(_RustLogReader)')">$([System.IO.File]::ReadAllText('$(_RustLogReader)').Contains('BeginSequentialScan'))</_HasSequentialScan>
+    <DefineConstants Condition="'$(_HasSequentialScan)' == 'True'">$(DefineConstants);RUSTTEXT_SEQUENTIAL_SCAN</DefineConstants>
+    <DefineConstants Condition="Exists('$(RustSource)\src\RustText\Logs\LogDataReader.Search.cs')">$(DefineConstants);RUSTTEXT_BUFFERED_LOG_SEARCH</DefineConstants>
+    <DefineConstants Condition="Exists('$(RustSource)\src\RustText\Editor\TextMatcher.cs')">$(DefineConstants);RUSTTEXT_TEXT_MATCHER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(NetTextProject)" />
     <Compile Include="$(RustSource)\src\RustText\Logs\LogDataReader.cs" Link="RustText\LogDataReader.cs" />
+    <Compile Include="$(RustSource)\src\RustText\Logs\LogDataReader.Search.cs" Link="RustText\LogDataReader.Search.cs"
+             Condition="Exists('$(RustSource)\src\RustText\Logs\LogDataReader.Search.cs')" />
     <Compile Include="$(RustSource)\src\RustText\Storage\DocumentFiles.cs" Link="RustText\DocumentFiles.cs" />
     <Compile Include="$(RustSource)\src\RustText\Editor\TextOperations.cs" Link="RustText\TextOperations.cs" />
+    <Compile Include="$(RustSource)\src\RustText\Editor\TextMatcher.cs" Link="RustText\TextMatcher.cs"
+             Condition="Exists('$(RustSource)\src\RustText\Editor\TextMatcher.cs')" />
+    <Compile Include="$(RustSource)\src\RustText\Editor\JsonFormatting.cs" Link="RustText\JsonFormatting.cs"
+             Condition="Exists('$(RustSource)\src\RustText\Editor\JsonFormatting.cs')" />
     <Compile Include="$(RustSource)\src\RustText\Editor\ReplacementLineEndings.cs" Link="RustText\ReplacementLineEndings.cs"
-             Condition="'$(RustVersion)' == '2.4.0'" />
+             Condition="Exists('$(RustSource)\src\RustText\Editor\ReplacementLineEndings.cs')" />
   </ItemGroup>
 </Project>

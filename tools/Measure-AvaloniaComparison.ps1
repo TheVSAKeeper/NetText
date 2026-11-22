@@ -1,6 +1,7 @@
 ﻿[CmdletBinding()]
 param(
-    [ValidateSet('2.3.0', '2.4.0')][string]$RustVersion = '2.4.0',
+    [string]$RustVersion = '2.4.0',
+    [string]$RustRevision,
     [string]$RustTextRepository = (Join-Path $PSScriptRoot '../../RustText'),
     [ValidateRange(2, 100)][int]$Iterations = 6,
     [ValidateRange(500, 60000)][int]$MemorySampleMs = 2000,
@@ -36,10 +37,26 @@ if (-not (Test-Path -LiteralPath $RustTextRepository -PathType Container)) {
     throw "RustText repository was not found at '$RustTextRepository'. Clone https://github.com/Illson/RustText.git (with tag v$RustVersion) or pass -RustTextRepository <path>."
 }
 $RustTextRepository = (Resolve-Path -LiteralPath $RustTextRepository).Path
-$rustRevision = @{
+$pinnedRustRevisions = @{
     '2.3.0' = 'd5e53ed245becbbfe79e8f6f15ce16cda52ebd59'
     '2.4.0' = 'b2e93831443d4cbe72ff33d20cd8a61bace2a0d8'
-}[$RustVersion]
+}
+$rustTargetRef = if ($RustRevision) {
+    $RustRevision
+} elseif ($pinnedRustRevisions.ContainsKey($RustVersion)) {
+    $pinnedRustRevisions[$RustVersion]
+} else {
+    "refs/tags/v$RustVersion"
+}
+$rustRevisionLines = @(& git -C $RustTextRepository rev-parse --verify "${rustTargetRef}^{commit}" 2>$null)
+$rustRevision = if ($LASTEXITCODE -eq 0 -and $rustRevisionLines.Count -gt 0) { $rustRevisionLines[0].Trim() } else { '' }
+if (-not $rustRevision -and -not $RustRevision -and -not $pinnedRustRevisions.ContainsKey($RustVersion)) {
+    $rustRevisionLines = @(& git -C $RustTextRepository rev-parse --verify "${RustVersion}^{commit}" 2>$null)
+    if ($LASTEXITCODE -eq 0 -and $rustRevisionLines.Count -gt 0) { $rustRevision = $rustRevisionLines[0].Trim() }
+}
+if (-not $rustRevision) {
+    throw "Unable to resolve RustText commit for '$rustTargetRef' in '$RustTextRepository'."
+}
 if (-not $OutputDirectory) {
     $runId = [datetime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
     $OutputDirectory = Join-Path $root "artifacts/comparison/$runId"
