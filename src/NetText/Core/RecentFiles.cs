@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -7,10 +7,14 @@ namespace NetText.Core;
 public sealed record RecentFile(
     [property: JsonPropertyName("path")] string Path,
     [property: JsonPropertyName("windows_1251")] bool Windows1251,
-    [property: JsonPropertyName("view_as_log")] bool ViewAsLog = false)
+    [property: JsonPropertyName("view_as_log")] bool ViewAsLog = false,
+    [property: JsonPropertyName("opened_at")] DateTimeOffset? OpenedAt = null,
+    [property: JsonPropertyName("lines")] ulong? Lines = null,
+    [property: JsonPropertyName("position")] SessionTab? Position = null,
+    [property: JsonPropertyName("edit_pages"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? EditPages = null)
 {
-    public static RecentFile From(string path, TextEncoding encoding, bool viewAsLog = false) =>
-        new(path, encoding == TextEncoding.Windows1251, viewAsLog);
+    public static RecentFile From(string path, TextEncoding encoding, bool viewAsLog = false, bool? editPages = null) =>
+        new(path, encoding == TextEncoding.Windows1251, viewAsLog, DateTimeOffset.UtcNow, EditPages: editPages);
 }
 
 [JsonSerializable(typeof(List<RecentFile>))]
@@ -19,16 +23,19 @@ internal partial class RecentJsonContext : JsonSerializerContext;
 public sealed class RecentFiles
 {
     public const int MaxFiles = 16;
+    public const int MaxHistoryFiles = 10_000;
 
     private readonly string? _path;
     private readonly List<RecentFile> _entries;
     private readonly List<RecentFile> _pending;
+    private readonly HashSet<string> _pendingRemovals;
 
-    private RecentFiles(string? path, List<RecentFile> entries, List<RecentFile> pending)
+    private RecentFiles(string? path, List<RecentFile> entries, List<RecentFile> pending, HashSet<string>? pendingRemovals = null)
     {
         _path = path;
         _entries = entries;
         _pending = pending;
+        _pendingRemovals = pendingRemovals ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
     public RecentFiles(string? path = null)
@@ -36,7 +43,8 @@ public sealed class RecentFiles
     {
     }
 
-    public IReadOnlyList<RecentFile> Entries => _entries;
+    public IReadOnlyList<RecentFile> Entries => _entries.Count <= MaxFiles ? _entries : _entries.GetRange(0, MaxFiles);
+    public IReadOnlyList<RecentFile> History => _entries;
 
     public static (RecentFiles Recent, Exception? Error) Load()
     {
@@ -57,7 +65,7 @@ public sealed class RecentFiles
         }
     }
 
-    public RecentFiles Clone() => new(_path, [.. _entries], [.. _pending]);
+    public RecentFiles Clone() => new(_path, [.. _entries], [.. _pending], new HashSet<string>(_pendingRemovals, StringComparer.OrdinalIgnoreCase));
 
     public void Reload()
     {
@@ -74,11 +82,39 @@ public sealed class RecentFiles
     {
         foreach (var file in files)
         {
+            _pendingRemovals.Remove(file.Path);
             MoveToFront(_entries, file);
             MoveToFront(_pending, file);
         }
 
-        if (_pending.Count == 0)
+        if (_entries.Count > MaxHistoryFiles)
+        {
+            _entries.RemoveRange(MaxHistoryFiles, _entries.Count - MaxHistoryFiles);
+        }
+
+        Persist([]);
+    }
+
+    public bool Remove(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        bool removed = _entries.RemoveAll(e => string.Equals(e.Path, path, StringComparison.OrdinalIgnoreCase)) > 0;
+        _pending.RemoveAll(e => string.Equals(e.Path, path, StringComparison.OrdinalIgnoreCase));
+        if (_path is null)
+        {
+            return removed;
+        }
+
+        _pendingRemovals.Add(path);
+        Persist([]);
+        return removed;
+    }
+
+    public void RecordPositions(IReadOnlyList<RecentFile> files) => Persist(files);
+
+    private void Persist(IReadOnlyList<RecentFile> positions)
+    {
+        if (_pending.Count == 0 && _pendingRemovals.Count == 0 && positions.Count == 0)
         {
             return;
         }
@@ -104,9 +140,34 @@ public sealed class RecentFiles
             entries = [];
         }
 
+        if (_pendingRemovals.Count > 0)
+        {
+            entries.RemoveAll(e => _pendingRemovals.Contains(e.Path));
+        }
+
         for (int i = _pending.Count - 1; i >= 0; i--)
         {
             MoveToFront(entries, _pending[i]);
+        }
+
+        foreach (var position in positions)
+        {
+            int index = entries.FindIndex(item => item.ViewAsLog == position.ViewAsLog &&
+                string.Equals(item.Path, position.Path, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0)
+            {
+                entries[index] = entries[index] with
+                {
+                    Lines = position.Lines ?? entries[index].Lines,
+                    Position = position.Position,
+                    EditPages = position.EditPages ?? position.Position?.EditPages ?? entries[index].EditPages,
+                };
+            }
+        }
+
+        if (entries.Count > MaxHistoryFiles)
+        {
+            entries.RemoveRange(MaxHistoryFiles, entries.Count - MaxHistoryFiles);
         }
 
         var tempPath = Path.Combine(directory, $".recent-{Guid.NewGuid():N}.tmp");
@@ -137,9 +198,10 @@ public sealed class RecentFiles
         _entries.Clear();
         _entries.AddRange(entries);
         _pending.Clear();
+        _pendingRemovals.Clear();
     }
 
-    private static FileStream AcquireLock(string lockPath)
+    internal static FileStream AcquireLock(string lockPath)
     {
         var deadline = Environment.TickCount64 + 3000;
         while (true)
@@ -157,12 +219,22 @@ public sealed class RecentFiles
 
     private static void MoveToFront(List<RecentFile> entries, RecentFile file)
     {
-        entries.RemoveAll(e => string.Equals(e.Path, file.Path, StringComparison.OrdinalIgnoreCase));
-        entries.Insert(0, file);
-        if (entries.Count > MaxFiles)
+        var previous = entries.Find(e => string.Equals(e.Path, file.Path, StringComparison.OrdinalIgnoreCase));
+        if (previous is not null)
         {
-            entries.RemoveRange(MaxFiles, entries.Count - MaxFiles);
+            entries.Remove(previous);
+            file = file with
+            {
+                Lines = file.Lines ?? previous.Lines,
+                Position = file.Position ?? previous.Position,
+                EditPages = file.EditPages ?? file.Position?.EditPages ?? previous.EditPages,
+            };
         }
+        else if (file.EditPages is null && file.Position?.EditPages is { } posEditPages)
+        {
+            file = file with { EditPages = posEditPages };
+        }
+        entries.Insert(0, file);
     }
 
     private static List<RecentFile> ReadEntries(string path)
@@ -176,10 +248,6 @@ public sealed class RecentFiles
         try
         {
             var entries = JsonSerializer.Deserialize(bytes, RecentJsonContext.Default.ListRecentFile) ?? [];
-            if (entries.Count > MaxFiles)
-            {
-                entries.RemoveRange(MaxFiles, entries.Count - MaxFiles);
-            }
             return entries;
         }
         catch (JsonException ex)

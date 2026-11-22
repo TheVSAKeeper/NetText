@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace NetText.Native;
 
@@ -19,6 +19,10 @@ internal static unsafe partial class Win32
 
     public const uint WS_EX_TOOLWINDOW = 0x00000080;
     public const uint WS_EX_DLGMODALFRAME = 0x00000001;
+    public const uint WS_EX_TOPMOST = 0x00000008;
+    public const uint WS_EX_TRANSPARENT = 0x00000020;
+    public const uint WS_EX_LAYERED = 0x00080000;
+    public const uint WS_EX_NOACTIVATE = 0x08000000;
 
     public const uint ES_AUTOHSCROLL = 0x0080;
     public const uint BS_DEFPUSHBUTTON = 0x0001;
@@ -39,7 +43,19 @@ internal static unsafe partial class Win32
     public const uint CS_DBLCLKS = 0x0008;
 
     public const int SW_HIDE = 0;
+    public const int SW_SHOWNOACTIVATE = 4;
     public const int SW_SHOW = 5;
+
+    public const uint LWA_COLORKEY = 0x00000001;
+    public const uint LWA_ALPHA = 0x00000002;
+    public static readonly nint HWND_TOPMOST = -1;
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint GRADIENT_FILL_RECT_H = 0x00000000;
+    public const uint GRADIENT_FILL_RECT_V = 0x00000001;
+    public const uint CC_RGBINIT = 0x00000001;
+    public const uint CC_FULLOPEN = 0x00000002;
+    public const uint CC_ANYCOLOR = 0x00000100;
 
     public const uint WM_CREATE = 0x0001;
     public const uint WM_DESTROY = 0x0002;
@@ -65,13 +81,16 @@ internal static unsafe partial class Win32
     public const uint WM_LBUTTONDOWN = 0x0201;
     public const uint WM_LBUTTONUP = 0x0202;
     public const uint WM_LBUTTONDBLCLK = 0x0203;
+    public const uint WM_RBUTTONUP = 0x0205;
     public const uint WM_MOUSEWHEEL = 0x020A;
+    public const uint WM_MOUSEHWHEEL = 0x020E;
     public const uint WM_CAPTURECHANGED = 0x0215;
     public const uint WM_MOUSELEAVE = 0x02A3;
     public const uint WM_DROPFILES = 0x0233;
     public const uint WM_APP = 0x8000;
     public const uint WM_APP_DISPATCH = WM_APP + 1;
     public const uint WM_APP_IPC = WM_APP + 2;
+    public const uint WM_APP_SCROLL_LAYOUT = WM_APP + 3;
 
     public const int VK_RETURN = 0x0D;
     public const int VK_ESCAPE = 0x1B;
@@ -100,6 +119,7 @@ internal static unsafe partial class Win32
     public const uint MB_YESNO = 0x00000004;
     public const uint MB_ICONWARNING = 0x00000030;
     public const int IDYES = 6;
+    public const int IDNO = 7;
 
     public const int SM_CXSCREEN = 0;
     public const int SM_CYSCREEN = 1;
@@ -115,6 +135,7 @@ internal static unsafe partial class Win32
     public const uint DT_VCENTER = 0x00000004;
     public const uint DT_SINGLELINE = 0x00000020;
     public const uint DT_END_ELLIPSIS = 0x00008000;
+    public const uint DT_PATH_ELLIPSIS = 0x00004000;
     public const uint DT_NOPREFIX = 0x00000800;
 
     public const int FW_NORMAL = 400;
@@ -314,9 +335,6 @@ internal static unsafe partial class Win32
     [LibraryImport("kernel32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     public static partial nint GetModuleHandleW(string? lpModuleName);
 
-    [LibraryImport("kernel32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-    public static partial nint LoadLibraryW(string lpLibFileName);
-
     [LibraryImport("user32.dll", SetLastError = true)]
     public static partial ushort RegisterClassExW(WNDCLASSEXW* lpwcx);
 
@@ -389,7 +407,22 @@ internal static unsafe partial class Win32
     public static partial nint DefWindowProcW(nint hWnd, uint Msg, nuint wParam, nint lParam);
 
     [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ShowScrollBar(nint hwnd, int bar, [MarshalAs(UnmanagedType.Bool)] bool show);
+
+    [LibraryImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool RectVisible(nint hdc, RECT* rect);
+
+    [LibraryImport("user32.dll")]
     public static partial int GetMessageW(MSG* lpMsg, nint hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool IsDialogMessageW(nint window, MSG* message);
+
+    [LibraryImport("user32.dll")]
+    public static partial int FrameRect(nint hdc, RECT* rect, nint brush);
 
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -437,6 +470,17 @@ internal static unsafe partial class Win32
 
     [LibraryImport("user32.dll")]
     public static partial nint LoadCursorW(nint hInstance, nint lpCursorName);
+
+    [LibraryImport("user32.dll")]
+    public static partial nint LoadImageW(nint hInstance, nint name, uint type, int width, int height, uint flags);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool DrawIconEx(nint hdc, int x, int y, nint icon, int width, int height, uint step, nint brush, uint flags);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool DestroyIcon(nint icon);
 
     [LibraryImport("user32.dll")]
     public static partial nint SetCursor(nint hCursor);
@@ -661,8 +705,33 @@ internal static unsafe partial class Win32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetTextMetricsW(nint hdc, TEXTMETRICW* lptm);
 
+    public const uint WM_SETICON = 0x0080;
     public const uint WM_NCCREATE = 0x0081;
     public const uint WM_NCDESTROY = 0x0082;
+    public const uint WM_NCCALCSIZE = 0x0083;
+    public const uint WM_NCHITTEST = 0x0084;
+    public const uint WM_NCMOUSEMOVE = 0x00A0;
+    public const uint WM_NCLBUTTONDOWN = 0x00A1;
+    public const uint WM_NCLBUTTONDBLCLK = 0x00A3;
+    public const uint WM_NCMOUSELEAVE = 0x02A2;
+    public const uint WM_SYSCOMMAND = 0x0112;
+    public const int HT_CLIENT = 1;
+    public const int HT_CAPTION = 2;
+    public const int HT_MINBUTTON = 8;
+    public const int HT_MAXBUTTON = 9;
+    public const int HT_LEFT = 10;
+    public const int HT_TOP = 12;
+    public const int HT_BOTTOMRIGHT = 17;
+    public const int HT_CLOSE = 20;
+    public const uint IMAGE_ICON = 1;
+    public const uint DI_NORMAL = 3;
+    public const uint ICON_SMALL = 0;
+    public const uint ICON_BIG = 1;
+    public const uint TME_NONCLIENT = 0x10;
+    public const uint SC_MINIMIZE = 0xF020;
+    public const uint SC_MAXIMIZE = 0xF030;
+    public const uint SC_CLOSE = 0xF060;
+    public const uint SC_RESTORE = 0xF120;
     public const int GWLP_USERDATA = -21;
     public const int IDC_IBEAM = 32513;
     public const uint SRCCOPY = 0x00CC0020;
@@ -699,6 +768,23 @@ internal static unsafe partial class Win32
     [LibraryImport("user32.dll")]
     public static partial nint SetClipboardData(uint uFormat, nint hMem);
 
+    public static void CopyText(nint owner, string text)
+    {
+        if (text.Length == 0 || !OpenClipboard(owner)) return;
+        try
+        {
+            nint memory = GlobalAlloc(GMEM_MOVEABLE, (nuint)(text.Length + 1) * sizeof(char));
+            if (memory == 0) return;
+            nint pointer = GlobalLock(memory);
+            if (pointer == 0) { GlobalFree(memory); return; }
+            text.AsSpan().CopyTo(new Span<char>((void*)pointer, text.Length));
+            ((char*)pointer)[text.Length] = '\0';
+            GlobalUnlock(memory);
+            if (!EmptyClipboard() || SetClipboardData(CF_UNICODETEXT, memory) == 0) GlobalFree(memory);
+        }
+        finally { CloseClipboard(); }
+    }
+
     [LibraryImport("kernel32.dll")]
     public static partial nint GlobalAlloc(uint uFlags, nuint dwBytes);
 
@@ -714,6 +800,10 @@ internal static unsafe partial class Win32
 
     [LibraryImport("dwmapi.dll")]
     public static partial int DwmSetWindowAttribute(nint hwnd, int dwAttribute, int* pvAttribute, int cbAttribute);
+
+    [LibraryImport("dwmapi.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool DwmDefWindowProc(nint hwnd, uint message, nuint wParam, nint lParam, nint* result);
 
     [LibraryImport("shell32.dll")]
     public static partial void DragAcceptFiles(nint hWnd, [MarshalAs(UnmanagedType.Bool)] bool fAccept);
@@ -732,12 +822,92 @@ internal static unsafe partial class Win32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetSaveFileNameW(OPENFILENAMEW* lpofn);
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CHOOSECOLOR
+    {
+        public uint lStructSize;
+        public nint hwndOwner;
+        public nint hInstance;
+        public uint rgbResult;
+        public uint* lpCustColors;
+        public uint Flags;
+        public nint lCustData;
+        public nint lpfnHook;
+        public char* lpTemplateName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TRIVERTEX
+    {
+        public int x;
+        public int y;
+        public ushort Red;
+        public ushort Green;
+        public ushort Blue;
+        public ushort Alpha;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GRADIENT_RECT
+    {
+        public uint UpperLeft;
+        public uint LowerRight;
+    }
+
+    [LibraryImport("comdlg32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool ChooseColorW(CHOOSECOLOR* lpcc);
+
+    [LibraryImport("msimg32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool GradientFill(nint hdc, TRIVERTEX* pVertex, uint nVertex, GRADIENT_RECT* pMesh, uint nMesh, uint ulMode);
+
+    [LibraryImport("comctl32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetWindowSubclass(
+        nint hWnd,
+        delegate* unmanaged[Stdcall]<nint, uint, nuint, nint, nuint, nuint, nint> pfnSubclass,
+        nuint uIdSubclass,
+        nuint dwRefData);
+
+    [LibraryImport("comctl32.dll")]
+    public static partial nint DefSubclassProc(nint hWnd, uint uMsg, nuint wParam, nint lParam);
+
+    [LibraryImport("comctl32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool RemoveWindowSubclass(
+        nint hWnd,
+        delegate* unmanaged[Stdcall]<nint, uint, nuint, nint, nuint, nuint, nint> pfnSubclass,
+        nuint uIdSubclass);
+
+    [LibraryImport("uxtheme.dll", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial int SetWindowTheme(nint hwnd, string? pszSubAppName, string? pszSubIdList);
+
+    [LibraryImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool Polygon(nint hdc, POINT* apt, int cpt);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetWindowPos(nint hWnd, nint hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
     public static bool IsKeyDown(int vk) => (GetKeyState(vk) & 0x8000) != 0;
 
     public static void EnableDarkTitleBar(nint hwnd)
     {
         int enabled = 1;
         DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &enabled, sizeof(int));
+    }
+
+    public static void SetWindowBorderColor(nint hwnd, uint color)
+    {
+        const int BorderColorAttribute = 34;
+        int border = (int)color;
+        DwmSetWindowAttribute(hwnd, BorderColorAttribute, &border, sizeof(int));
     }
 
     public static int GetXParam(nint lParam) => unchecked((short)((long)lParam & 0xFFFF));

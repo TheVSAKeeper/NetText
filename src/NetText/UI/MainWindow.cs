@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -9,20 +9,22 @@ using NetText.Native;
 
 namespace NetText.UI;
 
-internal sealed unsafe class MainWindow
+internal sealed unsafe partial class MainWindow
 {
-    private const int ToolbarLogicalHeight = 46;
-    private const int TabBarLogicalHeight = 43;
-    private const int StatusLogicalHeight = 31;
-    private const int EditorSearchLogicalHeight = 76;
-    private const int LogToolbarLogicalHeight = 112;
-    private const int LogSearchLogicalHeight = 152;
-    private const float MinFontSize = 9.0f;
-    private const float MaxFontSize = 35.0f;
+    private const int ToolbarLogicalHeight = 36;
+    private const int TabBarLogicalHeight = 30;
+    private const int StatusLogicalHeight = 26;
+    private const int EditorSearchLogicalHeight = 160;
+    private const int LogToolbarLogicalHeight = 38;
+    private const int LogSearchLogicalHeight = 150;
+    private const int LogNavigationLogicalHeight = 36;
+    private const float MinFontSize = 8.0f;
+    private const float MaxFontSize = 48.0f;
     private const int MaxClosedTabs = SessionJournal.MaxClosedTabs;
 
     private const nuint FastTimerId = 1;
     private const nuint SlowTimerId = 2;
+    private const uint WM_MOVE = 0x0003;
 
     private const int IdSearchQueryEdit = 2001;
     private const int IdSearchReplaceEdit = 2002;
@@ -81,11 +83,53 @@ internal sealed unsafe class MainWindow
         LogFindCase = 45,
         LogFindWhole = 46,
         BtnNewTab = 47,
+        FileMenu = 48,
+        ToolsMenu = 49,
+        Home = 50,
+        JsonError = 51,
+        SplitVertical = 52,
+        SplitHorizontal = 53,
+        GroupDivider = 54,
+        GroupTab = 55,
+        HomePrevious = 56,
+        HomeNext = 57,
+        SearchList = 58,
+        SearchHighlight = 59,
+        LogTime = 60,
+        SearchToggleReplace = 61,
+        ScrollMap = 62,
+        ApplyUpdate = 63,
+        DismissUpdate = 64,
+        EmptyGroup = 65,
+        NewInGroup = 66,
+        CloseEmptyGroup = 67,
+        HorizontalScroll = 68,
+        VerticalScroll = 69,
+        SearchFindAll = 70,
+        SearchRun = 71,
+        ThemeMenu = 72,
+        WorkspaceBadge = 73,
+        LogLevelsButton = 74,
+        LogActionsMenu = 75,
+        LogEditPage = 76,
+        LogSavePage = 77,
+        LogCancelPage = 78,
+        LogJump50 = 79,
+        LogFilterToggle = 80,
+        LogFilterAll = 81,
+        LogFilterClose = 82,
+        HomeSectionToggle = 83,
+        HomeRowOpen = 84,
+        HomeRowDelete = 85,
+        HomeSectionPrev = 86,
+        HomeSectionNext = 87,
+        OpenUpdateDialog = 88,
+        DeferredLoadTab = 89,
     }
 
     private readonly record struct HitRect(Win32.RECT Rect, HitKind Kind, ulong TabId = 0);
 
-    private sealed class Document
+    internal sealed class Document
     {
         public ulong Id;
         public string Name = "Без имени";
@@ -100,11 +144,48 @@ internal sealed unsafe class MainWindow
         public int CursorColumn;
         public ulong Revision;
         public ulong? DraftRevision;
+        public byte[]? DraftBytes;
+        public bool JsonDisabled;
+        public bool UntitledNamePending;
+        public long JsonDue;
+        public ulong JsonRevision = ulong.MaxValue;
+        public ulong JsonResultRevision = ulong.MaxValue;
+        public string? JsonResult;
+        public int JsonErrorPosition = -1;
+        public bool JsonMarked;
+        public string? JsonError => !JsonDisabled && JsonResultRevision == Revision ? JsonResult : null;
+        public int Group;
+        public DateTimeOffset? LastWorked = DateTimeOffset.UtcNow;
+        public ulong? StoredLineCount;
         public LogViewerState? Log;
         public LogViewport? Viewport;
+        public bool NativeVerticalScroll = true;
+        public bool HorizontalScroll;
+        public (int First, int Count)? MeasuredLines;
+        public int MeasuredWidth;
+        public ScrollRange LastVerticalRange;
+        public ScrollRange LastHorizontalRange;
+        public LogDestination? ScrollDestination;
+        public string? CustomTitle;
+        public bool AutoRefresh = true;
+        public bool EditPages;
+        public bool IsConsole;
+        public ConsoleCaptureSession? ConsoleSession;
+        public bool IdleUnloaded;
+        public bool CheckingSession;
+        public SessionTab? DeferredState;
+        public EditorFileWatch? FileWatch;
+        public nint FilterPreviewHwnd;
+        public LogLevel ActiveLogFilter = LogLevel.All;
+        public int[]? FilterSourceLines;
+        public HashSet<string>? VisitedLinks;
+        public int LastSelectedChars;
+        public int LastCaretCount = 1;
+        public bool IsExternalDraft;
+        public string? RecoveryStatus;
     }
 
-    private static MainWindow? _instance;
+    private static MainWindow? _creatingWindow;
 
     private readonly List<Document> _documents = [];
     private readonly List<(SessionTab Tab, byte[]? DraftBytes)> _closed = [];
@@ -124,9 +205,10 @@ internal sealed unsafe class MainWindow
     private string? _busy;
     private string? _error;
     private bool _wrap;
-    private float _fontSize = 15.0f;
+    private float _fontSize = 12.0f;
     private int _tabScrollX;
     private int _fastTicks;
+    private int _slowTicks;
     private bool _diskCheckInFlight;
     private bool _sessionShutdownDone;
     private bool _closingForSession;
@@ -175,6 +257,23 @@ internal sealed unsafe class MainWindow
     public MainWindow(string[] startupPaths, SingleInstance? singleInstance)
     {
         _singleInstance = singleInstance;
+        try
+        {
+            var loaded = EditorSettings.Load();
+            var migrated = loaded.MigrateLegacyUpdateChoice();
+            if (!Equals(migrated, loaded))
+            {
+                loaded = migrated;
+                try { loaded.Save(); } catch { }
+            }
+            _settings = loaded;
+        }
+        catch (Exception error) { _error = $"Не удалось прочитать настройки. {error.Message}"; }
+
+        ThemePalette.Apply(_settings.Theme);
+        _fontSize = Math.Clamp(_settings.FontSize, MinFontSize, MaxFontSize);
+        _wrap = _settings.WordWrap;
+
         var (recent, recentError) = RecentFiles.Load();
         _recent = recent;
         if (recentError is not null)
@@ -182,35 +281,77 @@ internal sealed unsafe class MainWindow
             _error = RecentWarning(recentError);
         }
 
-        RecoveredSession? recovered = null;
-        try
+        string? startupWorkspaceId = WorkspaceCatalogService.DefaultWorkspaceId;
+        bool startEmpty = false;
+        if (startupPaths.Length == 0)
         {
-            _sessionJournal = SessionJournal.Open();
-            recovered = _sessionJournal.Restore();
-            if (recovered?.Warning is not null)
-            {
-                _error ??= recovered.Warning;
-            }
-        }
-        catch (Exception ex)
-        {
-            _error ??= $"Сохранение сессии недоступно. {ex.Message}";
+            (startupWorkspaceId, startEmpty) = ResolveStartupWorkspace();
         }
 
-        _instance = this;
         _hInstance = Win32.GetModuleHandleW(null);
+        var recovered = InitializeWorkspaceState(
+            startupWorkspaceId,
+            WorkspaceCatalogService.PrimaryWindowId,
+            startEmpty,
+            isDetached: false);
+        WorkspaceSession.Current.RegisterWindow(this);
         CreateWindowAndShow(startupPaths, recovered);
+        UpdateWindowTitle();
+        CheckForUpdates();
+    }
+
+    private (string WorkspaceId, bool StartEmpty) ResolveStartupWorkspace()
+    {
+        if (_settings.WorkspaceStartupMode == WorkspaceStartupMode.Empty)
+        {
+            return (WorkspaceCatalogService.DefaultWorkspaceId, true);
+        }
+
+        try
+        {
+            var catalog = WorkspaceSession.Current.EnsureCatalog();
+            if (_settings.WorkspaceStartupMode == WorkspaceStartupMode.Specific &&
+                !string.IsNullOrWhiteSpace(_settings.StartupWorkspaceId) &&
+                catalog.Workspaces.Any(w => w.Id == _settings.StartupWorkspaceId))
+            {
+                return (_settings.StartupWorkspaceId!, false);
+            }
+
+            if (catalog.WindowAssignments.TryGetValue(WorkspaceCatalogService.PrimaryWindowId, out var assigned) &&
+                catalog.Workspaces.Any(w => w.Id == assigned))
+            {
+                return (assigned, false);
+            }
+
+            var latest = catalog.Workspaces
+                .OrderByDescending(w => w.LastUsedMs)
+                .FirstOrDefault(w => w.LastUsedMs > 0);
+            if (latest is not null)
+            {
+                return (latest.Id, false);
+            }
+        }
+        catch
+        {
+        }
+
+        return (WorkspaceCatalogService.DefaultWorkspaceId, false);
     }
 
     public nint Hwnd => _hwnd;
 
     public bool TryHandleKeyMessage(nint targetHwnd, int vk)
     {
+        if (_showHome && vk == Win32.VK_RETURN && (targetHwnd == _historyQuery || targetHwnd == _historyList))
+        {
+            OpenHistorySelection();
+            return true;
+        }
         if (targetHwnd == _searchQueryEdit)
         {
             if (vk == Win32.VK_RETURN)
             {
-                RunEditorSearch(Win32.IsKeyDown(Win32.VK_SHIFT) ? SearchCommand.Previous : SearchCommand.Next);
+                RunEditorSearch(Win32.IsKeyDown(Win32.VK_SHIFT) ? SearchCommand.Previous : SearchCommand.List);
                 return true;
             }
             if (vk == Win32.VK_ESCAPE)
@@ -232,12 +373,17 @@ internal sealed unsafe class MainWindow
                 return true;
             }
         }
-        else if (targetHwnd == _logJumpEdit && vk == Win32.VK_RETURN)
+        else if (targetHwnd == _textSearchList && vk == Win32.VK_RETURN)
+        {
+            ChooseTextSearchResult();
+            return true;
+        }
+        else if (HasDocument && targetHwnd == _logJumpEdit && vk == Win32.VK_RETURN)
         {
             ActiveDocument.Log?.JumpPercent();
             return true;
         }
-        else if (targetHwnd == _logSearchEdit)
+        else if (HasDocument && targetHwnd == _logSearchEdit)
         {
             if (vk == Win32.VK_RETURN)
             {
@@ -255,9 +401,25 @@ internal sealed unsafe class MainWindow
 
         bool ctrl = Win32.IsKeyDown(Win32.VK_CONTROL);
         bool shift = Win32.IsKeyDown(Win32.VK_SHIFT);
+        bool alt = Win32.IsKeyDown(VK_MENU);
 
-        if (_documents.Count > 0 && ActiveDocument.Log is { } activeLog)
+        if (vk == Win32.VK_ESCAPE && !ctrl && !shift && !alt)
         {
+            if (CancelActiveTabDrag()) return true;
+            if (HandleMultiCaretKey(Win32.VK_ESCAPE, ctrl, shift, alt)) return true;
+            if (_searchOpen && !_showHome && HasDocument && ActiveDocument.Log is null)
+            {
+                CloseEditorSearch();
+                return true;
+            }
+        }
+
+        if (HasDocument && ActiveDocument.Log is { } activeLog)
+        {
+            if (ctrl && !shift && !alt && vk == 'X' && activeLog.IsEditingPage && HandlePageEditCut(ActiveDocument))
+            {
+                return true;
+            }
             if (ctrl && vk == Win32.VK_HOME)
             {
                 activeLog.Navigate(LogDestination.Start);
@@ -282,13 +444,20 @@ internal sealed unsafe class MainWindow
 
         if (!ctrl)
         {
-            if (vk == Win32.VK_F3)
+            if (vk == Win32.VK_F3 && HasDocument && !_showHome)
             {
                 RunEditorSearch(shift ? SearchCommand.Previous : SearchCommand.Next);
                 return true;
             }
             return false;
         }
+
+        if (HandleMultiCaretKey(vk, ctrl, shift, alt))
+        {
+            return true;
+        }
+
+        if (alt) return false;
 
         switch (vk)
         {
@@ -299,7 +468,14 @@ internal sealed unsafe class MainWindow
                 OpenPicker(false, false);
                 return true;
             case 'S' when !shift:
-                Save(false);
+                if (HasDocument && !_showHome && ActiveDocument.Log is { IsEditingPage: true })
+                {
+                    SaveLogPageEdit(ActiveDocument);
+                }
+                else
+                {
+                    Save(false);
+                }
                 return true;
             case 'S' when shift:
                 Save(true);
@@ -314,7 +490,7 @@ internal sealed unsafe class MainWindow
                 GoToLine();
                 return true;
             case 'J' when shift:
-                FormatJson();
+                FormatActiveDocumentJson();
                 return true;
             case 'F' when !shift:
                 OpenSearch(false);
@@ -322,13 +498,22 @@ internal sealed unsafe class MainWindow
             case 'H' when !shift:
                 OpenSearch(true);
                 return true;
+            case '0' when !shift:
+            case 0x60 when !shift:
+                Zoom(12.0f - _fontSize);
+                _settings = _settings with { FontSize = _fontSize };
+                try { _settings.Save(); } catch { }
+                InvalidateChrome();
+                return true;
             case Win32.VK_OEM_PLUS:
             case Win32.VK_ADD:
                 Zoom(1.0f);
+                InvalidateChrome();
                 return true;
             case Win32.VK_OEM_MINUS:
             case Win32.VK_SUBTRACT:
                 Zoom(-1.0f);
+                InvalidateChrome();
                 return true;
             default:
                 return false;
@@ -369,13 +554,21 @@ internal sealed unsafe class MainWindow
         int initX = Math.Max(0, (screenW - initW) / 2);
         int initY = Math.Max(0, (screenH - initH) / 2);
 
-        _hwnd = Win32.CreateWindowExW(
-            0,
-            "NetTextMainWindow",
-            "NetText",
-            Win32.WS_OVERLAPPEDWINDOW | Win32.WS_CLIPCHILDREN,
-            initX, initY, initW, initH,
-            0, 0, _hInstance, null);
+        _creatingWindow = this;
+        try
+        {
+            _hwnd = Win32.CreateWindowExW(
+                0,
+                "NetTextMainWindow",
+                "NetText",
+                Win32.WS_OVERLAPPEDWINDOW | Win32.WS_CLIPCHILDREN,
+                initX, initY, initW, initH,
+                0, 0, _hInstance, null);
+        }
+        finally
+        {
+            _creatingWindow = null;
+        }
 
         if (_hwnd == 0)
         {
@@ -384,24 +577,27 @@ internal sealed unsafe class MainWindow
 
         _dpi = Win32.GetDpiForWindow(_hwnd);
         if (_dpi == 0) _dpi = 96;
+        UpdateWindowIcons();
 
         int scaledW = S(initW);
         int scaledH = S(initH);
         Win32.MoveWindow(_hwnd, Math.Max(0, (screenW - scaledW) / 2), Math.Max(0, (screenH - scaledH) / 2), scaledW, scaledH, false);
 
         Win32.EnableDarkTitleBar(_hwnd);
+        Win32.SetWindowBorderColor(_hwnd, ThemePalette.Chrome);
         Win32.DragAcceptFiles(_hwnd, true);
         RebuildFonts();
         CreateChildInputControls();
+        CreateSearchList();
+        CreateHomeControls();
+        UpdateHistory();
 
-        if (recovered is not null)
+        if (recovered is not null && !_startEmpty)
         {
             RestoreSession(recovered);
         }
-        else if (startupPaths.Length == 0)
-        {
-            AddDocument(null);
-        }
+        else if (startupPaths.Length == 0) _showHome = true;
+        if (_showHome) UpdateHistory();
 
         if (startupPaths.Length > 0)
         {
@@ -412,10 +608,18 @@ internal sealed unsafe class MainWindow
         Win32.ShowWindow(_hwnd, recovered?.State.Window.Maximized == true ? (int)Win32.SW_MAXIMIZE : Win32.SW_SHOW);
         Measurements.RecordWindowVisible();
         Win32.UpdateWindow(_hwnd);
+        TrackNormalWindowBounds();
         LayoutAndSyncControls();
         FocusActiveEditor();
 
-        _singleInstance?.SetWakeupCallback(() => Win32.PostMessageW(_hwnd, Win32.WM_APP_IPC, 0, 0));
+        (WorkspaceSession.Current.SingleInstance ?? _singleInstance)?.SetWakeupCallback(() =>
+        {
+            var target = WorkspaceSession.Current.LastActiveWindow ?? WorkspaceSession.Current.Windows.FirstOrDefault() ?? this;
+            if (target._hwnd != 0)
+            {
+                Win32.PostMessageW(target._hwnd, Win32.WM_APP_IPC, 0, 0);
+            }
+        });
         Win32.SetTimer(_hwnd, FastTimerId, 125, 0);
         Win32.SetTimer(_hwnd, SlowTimerId, 1000, 0);
     }
@@ -479,7 +683,12 @@ internal sealed unsafe class MainWindow
             if (h != 0) Win32.SendMessageW(h, Win32.WM_SETFONT, (nuint)_uiFont, 1);
         }
         if (_logSearchList != 0) Win32.SendMessageW(_logSearchList, Win32.WM_SETFONT, (nuint)_smallFont, 1);
+        if (_historyQuery != 0) Win32.SendMessageW(_historyQuery, Win32.WM_SETFONT, (nuint)_uiFont, 1);
+        if (_historyList != 0) Win32.SendMessageW(_historyList, Win32.WM_SETFONT, (nuint)_uiFont, 1);
+        if (_textSearchList != 0) Win32.SendMessageW(_textSearchList, Win32.WM_SETFONT, (nuint)_smallFont, 1);
     }
+
+    private bool HasDocument => _activeId != 0;
 
     private Document ActiveDocument =>
         _documents.Find(d => d.Id == _activeId) ?? throw new InvalidOperationException("active tab must exist");
@@ -492,15 +701,12 @@ internal sealed unsafe class MainWindow
         var name = target is null ? "Без имени" : FileName(target.Path);
 
         var editorHwnd = ScintillaInterop.CreateEditorControl(_hwnd, _hInstance, (int)MathF.Round(_fontSize), _wrap);
-        if (opened is not null)
-        {
-            ScintillaInterop.SetTextUtf8(editorHwnd, opened.Span);
-        }
-        ScintillaInterop.ApplyLanguage(editorHwnd, target?.Path, (int)MathF.Round(_fontSize));
+        InstallEditorSubclass(editorHwnd);
 
         var doc = new Document
         {
             Id = id,
+            Group = _activeGroup,
             Name = name,
             File = target,
             Format = format,
@@ -508,7 +714,24 @@ internal sealed unsafe class MainWindow
             PendingEditorReady = opened is not null,
             Dirty = false,
         };
+
+        bool attachedShared = TryAttachSharedScintillaDocument(doc);
+        if (!attachedShared)
+        {
+            if (opened is not null)
+            {
+                ScintillaInterop.SetTextFromOpened(editorHwnd, opened);
+            }
+            ScintillaInterop.ApplyLanguage(editorHwnd, target?.Path, (int)MathF.Round(_fontSize));
+            if (opened is not null)
+            {
+                ScintillaInterop.SetSavePoint(editorHwnd);
+            }
+        }
+
         _documents.Add(doc);
+        AttachFileWatch(doc);
+        UpdateEditorLinksAndLineNumbers(doc);
         SelectTab(id);
         if (doc.PendingEditorReady)
         {
@@ -516,9 +739,16 @@ internal sealed unsafe class MainWindow
         }
     }
 
-    private void AddLogDocument(FileTarget target, bool windows1251, LogBookmark? restoredBookmark, bool restored)
+    private void AddLogDocument(FileTarget target, bool windows1251, LogBookmark? restoredBookmark, bool restored, bool editPages = false)
     {
         ulong id = _nextId++;
+        var bookmark = restoredBookmark ?? new LogBookmark();
+        if (editPages)
+        {
+            bookmark.EditPages = true;
+            bookmark.AutoRefresh = false;
+            bookmark.FollowEnd = false;
+        }
         LogViewerState? state = null;
         var viewport = new LogViewport(
             _hwnd,
@@ -529,19 +759,46 @@ internal sealed unsafe class MainWindow
             nav => state?.Navigate(nav),
             delta => Zoom(delta));
         var editorHwnd = viewport.Hwnd;
+        viewport.Focused = () =>
+        {
+            if (!_showHome && _activeId != id) SelectTab(id);
+        };
+        viewport.Scrolled = () =>
+        {
+            var document = _documents.Find(d => d.Id == id);
+            if (document is not null) SyncDocumentScroll(document);
+            if (_activeId == id)
+            {
+                Win32.RECT status;
+                Win32.GetClientRect(_hwnd, &status);
+                status.Top = Math.Max(0, status.Bottom - S(StatusLogicalHeight));
+                Win32.InvalidateRect(_hwnd, &status, false);
+            }
+        };
 
         state = new LogViewerState(
             target.Path,
             windows1251,
-            restoredBookmark,
+            bookmark,
             DispatchUi,
             () =>
             {
                 if (state is not null)
                 {
                     viewport.SetSearchHighlight(state.SearchOpen ? state.HighlightRegex : null);
+                    viewport.SetFirstLine(state.PageLine, state.SearchOpen && state.SelectedSearchOffset == state.Bookmark.Offset);
+                    UpdateLogMinimap(id, state);
+                    if (state.EditsPagesByDefault && !state.IsEditingPage && !state.Reading && !state.IsFiltered &&
+                        state.Page is not null && !_pageEditors.ContainsKey(id))
+                    {
+                        var pageDoc = _documents.Find(d => d.Id == id);
+                        if (pageDoc is not null)
+                        {
+                            EnterLogPageEdit(pageDoc);
+                        }
+                    }
                 }
-                if (_documents.Count > 0 && ActiveDocument.Id == id)
+                if (_activeId == id)
                 {
                     SyncLogInputsAndHits();
                     LayoutAndSyncControls();
@@ -552,33 +809,37 @@ internal sealed unsafe class MainWindow
                     AdvanceE2EProbe();
                 }
             },
-            (utf8, scrollToBottom) =>
+            (page, line, scrollToBottom) =>
             {
-                viewport.SetUtf8Text(utf8, scrollToBottom);
+                viewport.SetPage(page, state!.Encoding, line, scrollToBottom, state.SelectedSearchOffset == state.Bookmark.Offset);
             },
             () =>
             {
                 Win32.RECT rc;
-                Win32.GetClientRect(_hwnd, &rc);
-                return Math.Max(300, rc.Height);
+                Win32.GetClientRect(editorHwnd, &rc);
+                return rc.Height;
             },
-            (pct, rem, orig) =>
+            plan =>
             {
-                string detail = $"Запрошено {pct}%. Из «{FileName(target.Path)}» будет удалено {rem} байт из {orig}. Перед записью NetText сохранит полную резервную копию рядом с логом.";
+                string detail = $"Из «{FileName(target.Path)}» будет удалено строк: {plan.RemovedLines:N0}, байт: {plan.RemovableBytes:N0} из {plan.OriginalSize:N0}. Перед записью NetText сохранит полную резервную копию рядом с логом.";
                 return Win32.MessageBoxW(_hwnd, detail, "Удалить начало исходного файла?", Win32.MB_YESNO | Win32.MB_ICONWARNING) == Win32.IDYES;
             });
 
         var doc = new Document
         {
             Id = id,
+            Group = _activeGroup,
             Name = FileName(target.Path),
             File = target,
             Format = new TextFormat(windows1251 ? TextEncoding.Windows1251 : TextEncoding.Utf8, LineEndings.Lf),
             EditorHwnd = editorHwnd,
             Log = state,
             Viewport = viewport,
+            AutoRefresh = bookmark.AutoRefresh,
+            EditPages = bookmark.EditPages,
         };
         _documents.Add(doc);
+        AttachFileWatch(doc);
         if (Measurements.IsE2EEnabled && _e2eLogDocId == 0)
         {
             _e2eLogDocId = id;
@@ -597,15 +858,21 @@ internal sealed unsafe class MainWindow
             return;
         }
 
+        int previousGroup = _activeGroup;
+        if (_activeId != id && !_restoringSession) target.LastWorked = DateTimeOffset.UtcNow;
         _activeId = id;
+        _activeGroup = target.Group;
+        _groupTabs[target.Group] = id;
+        _showHome = false;
+        if (previousGroup != _activeGroup) _tabScrollX = 0;
         if (target.Log is not null)
         {
             _searchOpen = false;
         }
 
-        foreach (var doc in _documents)
+        if (!_restoringSession && (target.IdleUnloaded || target.Placeholder))
         {
-            Win32.ShowWindow(doc.EditorHwnd, doc.Id == id ? Win32.SW_SHOW : Win32.SW_HIDE);
+            RestoreDeferredOrIdleTab(target);
         }
 
         EnsureTabVisible(id);
@@ -617,9 +884,18 @@ internal sealed unsafe class MainWindow
 
     private void FocusActiveEditor()
     {
-        if (_documents.Count > 0)
+        if (HasDocument && !_showHome)
         {
-            Win32.SetFocus(ActiveDocument.EditorHwnd);
+            var doc = ActiveDocument;
+            nint target = _pageEditors.TryGetValue(doc.Id, out nint pageHwnd) && pageHwnd != 0
+                ? pageHwnd
+                : doc.FilterPreviewHwnd != 0
+                    ? doc.FilterPreviewHwnd
+                    : doc.EditorHwnd;
+            if (target != 0 && Win32.GetFocus() != target)
+            {
+                Win32.SetFocus(target);
+            }
         }
     }
 
@@ -663,29 +939,58 @@ internal sealed unsafe class MainWindow
         }
 
         var doc = _documents[index];
-        var (tab, draftBytes) = SnapshotDocument(doc, includeDraft: doc.File is null);
-
-        _documents.RemoveAt(index);
-        doc.Log?.Dispose();
-        Win32.DestroyWindow(doc.EditorHwnd);
-
-        if (_closed.Count >= MaxClosedTabs)
+        if (!ConfirmLeaveDirtyPageEdit(doc))
         {
-            _closed.RemoveAt(0);
+            return;
         }
-        _closed.Add((tab, draftBytes));
+
+        doc.LastWorked = DateTimeOffset.UtcNow;
+        var (tab, draftBytes) = SnapshotDocument(doc, includeDraft: doc.File is null);
+        tab = tab with
+        {
+            ClosedAtMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            CustomTitle = doc.CustomTitle,
+            AutoRefresh = doc.AutoRefresh,
+            EditPages = doc.EditPages,
+        };
+        if (doc.File is { } file)
+        {
+            var entry = RecentFile.From(file.Path, doc.Format.Encoding, doc.Log is not null, doc.EditPages) with
+            {
+                Position = tab,
+                Lines = tab.LineCount,
+            };
+            try { _recent.Record([entry]); }
+            catch (Exception error) { _error = RecentWarning(error); }
+        }
+
+        bool wasActive = id == _activeId;
+        if (wasActive) _activeId = 0;
+        _documents.RemoveAt(index);
+        RemoveEmptyGroup(doc.Group);
+        DisposeDocumentResources(doc);
+
+        if (!SessionJournal.IsKnownEmptyUntitledDraft(tab, draftBytes))
+        {
+            if (_closed.Count >= MaxClosedTabs)
+            {
+                _closed.RemoveAt(0);
+            }
+            _closed.Add((tab, draftBytes));
+        }
 
         if (_documents.Count == 0)
         {
-            AddDocument(null);
+            ToggleHome();
         }
-        else if (id == _activeId)
+        else if (wasActive)
         {
-            ulong nextId = _documents[Math.Min(index, _documents.Count - 1)].Id;
+            ulong nextId = _documents[Math.Max(0, index - 1)].Id;
             SelectTab(nextId);
         }
         else
         {
+            LayoutAndSyncControls();
             InvalidateChrome();
         }
     }
@@ -725,7 +1030,7 @@ internal sealed unsafe class MainWindow
         SelectTab(newId);
     }
 
-    private static string ClosedTabLabel(SessionTab tab, byte[]? draftBytes)
+    private string ClosedTabLabel(SessionTab tab, byte[]? draftBytes)
     {
         if (tab.File is { } file)
         {
@@ -737,15 +1042,8 @@ internal sealed unsafe class MainWindow
             return "Без имени";
         }
 
-        string text = Encoding.UTF8.GetString(draftBytes);
-        var sb = new StringBuilder(60);
-        foreach (char ch in text)
-        {
-            if (sb.Length >= 60) break;
-            sb.Append(char.IsWhiteSpace(ch) ? ' ' : ch);
-        }
-        string preview = sb.ToString().Trim();
-        return preview.Length == 0 ? "Без имени" : $"Без имени – {preview}";
+        int firstLine = draftBytes.AsSpan().IndexOfAny((byte)'\r', (byte)'\n');
+        return _settings.UntitledName(firstLine < 0 ? draftBytes : draftBytes.AsSpan(0, firstLine));
     }
 
     private bool ConfirmDiscard(Document? doc)
@@ -776,12 +1074,16 @@ internal sealed unsafe class MainWindow
         {
             if (doc.Viewport is { } vp) vp.SetWrap(_wrap);
             else ScintillaInterop.SetWrap(doc.EditorHwnd, _wrap);
+            SyncDocumentScroll(doc);
         }
+        LayoutAndSyncControls();
+        InvalidateScrollbars();
         InvalidateChrome();
     }
 
     private void Zoom(float delta)
     {
+        if (!HasDocument || _showHome) return;
         float next = Math.Clamp(_fontSize + delta, MinFontSize, MaxFontSize);
         if (Math.Abs(next - _fontSize) < 0.01f)
         {
@@ -794,6 +1096,8 @@ internal sealed unsafe class MainWindow
         {
             if (doc.Log is null)
             {
+                doc.MeasuredLines = null;
+                doc.MeasuredWidth = 0;
                 ScintillaInterop.ApplyLanguage(doc.EditorHwnd, doc.File?.Path, pt);
             }
             else
@@ -805,6 +1109,7 @@ internal sealed unsafe class MainWindow
 
     private void GoToLine()
     {
+        if (!HasDocument || _showHome) return;
         if (_busy is not null || ActiveDocument.Log is not null)
         {
             return;
@@ -821,38 +1126,9 @@ internal sealed unsafe class MainWindow
         }
     }
 
-    private void FormatJson()
-    {
-        if (_busy is not null) return;
-        var doc = ActiveDocument;
-        if (doc.Placeholder || doc.Log is not null) return;
-
-        var (selStart, selEnd, _) = ScintillaInterop.GetSelection(doc.EditorHwnd);
-        int totalLen = ScintillaInterop.GetByteLength(doc.EditorHwnd);
-        int rangeStart = selEnd > selStart ? selStart : 0;
-        int rangeEnd = selEnd > selStart ? selEnd : totalLen;
-        ReadOnlySpan<byte> newline = doc.Format.LineEndingsLabel == "CRLF" ? "\r\n"u8 : "\n"u8;
-
-        _error = null;
-        if (!ScintillaInterop.TryFormatDocumentJsonUtf8(doc.EditorHwnd, rangeStart, rangeEnd, newline, out bool changed, out var err))
-        {
-            _error = err;
-            InvalidateChrome();
-            return;
-        }
-
-        if (changed)
-        {
-            doc.Dirty = true;
-            doc.Revision++;
-        }
-
-        FocusActiveEditor();
-        InvalidateChrome();
-    }
-
     private void OpenSearch(bool replace)
     {
+        if (!HasDocument || _showHome) return;
         var doc = ActiveDocument;
         if (doc.Log is { } log)
         {
@@ -865,8 +1141,9 @@ internal sealed unsafe class MainWindow
         }
 
         _searchOpen = true;
+        if (replace) _replaceOpen = true;
         LayoutAndSyncControls();
-        var focusTarget = replace && !_searchAllTabs ? _searchReplaceEdit : _searchQueryEdit;
+        var focusTarget = replace ? _searchReplaceEdit : _searchQueryEdit;
         Win32.SetFocus(focusTarget);
         Win32.SendMessageW(focusTarget, Win32.EM_SETSEL, 0, -1);
         InvalidateChrome();
@@ -878,6 +1155,7 @@ internal sealed unsafe class MainWindow
         _searchGen++;
         _searchInFlight = false;
         _lastSearchHit = null;
+        ClearSearchResults();
         LayoutAndSyncControls();
         FocusActiveEditor();
         InvalidateChrome();
@@ -888,23 +1166,30 @@ internal sealed unsafe class MainWindow
         _searchGen++;
         _searchInFlight = false;
         _lastSearchHit = null;
+        ClearSearchResults();
         _searchStatus = _searchAllTabs
             ? "Поиск по всем вкладкам. Замена доступна в текущей вкладке."
-            : "Enter – найти следующее совпадение";
+            : "Enter – найти совпадения";
         InvalidateChrome();
     }
 
     private void RunEditorSearch(SearchCommand command)
     {
-        if (_documents.Count == 0) return;
+        if (!HasDocument || _busy is not null || _searchInFlight) return;
         var active = ActiveDocument;
         if (active.Log is not null)
         {
             return;
         }
+        if (ScintillaInterop.GetByteLength(active.EditorHwnd) > EditorSearch.MaxDocumentBytes)
+        {
+            _searchStatus = "Поиск и замена доступны в документах до 64 МиБ.";
+            InvalidateChrome();
+            return;
+        }
 
         if ((command is SearchCommand.Replace or SearchCommand.ReplaceAll) &&
-            (_busy is not null || _searchInFlight || _searchAllTabs || active.Placeholder))
+            (_busy is not null || _searchInFlight || active.Placeholder))
         {
             return;
         }
@@ -923,13 +1208,17 @@ internal sealed unsafe class MainWindow
         var snapshots = new List<(ulong Id, ulong Rev, SearchUtf8Source Src)>();
         foreach (var d in _documents)
         {
-            if (d.Log is null && (query.AllTabs || d.Id == active.Id))
+            if (d.Log is null && (d.Id == active.Id || (query.AllTabs && command is not (SearchCommand.Replace or SearchCommand.ReplaceAll))))
             {
+                if (ScintillaInterop.GetByteLength(d.EditorHwnd) > EditorSearch.MaxDocumentBytes) continue;
                 var (buf, len) = ScintillaInterop.CopyUtf8BytesPooled(d.EditorHwnd);
                 snapshots.Add((d.Id, d.Revision, new SearchUtf8Source(d.Id, buf, len)));
             }
         }
 
+        var revisions = snapshots.Select(item => (item.Id, item.Rev)).ToArray();
+        SearchNavigationCursor? resume = _pausedNavigation is { } paused && paused.Command == command &&
+            paused.Query == query && paused.Origin == origin && paused.Sources.SequenceEqual(revisions) ? paused.Cursor : null;
         long gen = ++_searchGen;
         _searchInFlight = true;
         _searchStatus = "Поиск…";
@@ -948,7 +1237,10 @@ internal sealed unsafe class MainWindow
                     srcList.Add(snapshots[i].Src);
                 }
 
-                ok = EditorSearch.TryRunUtf8(
+                ok = command is SearchCommand.Next or SearchCommand.Previous
+                    ? EditorSearch.TryNavigateUtf8(query, command == SearchCommand.Previous, srcList, origin, skipCurrent,
+                        resume, out outcome, out error)
+                    : EditorSearch.TryRunUtf8(
                     query,
                     command,
                     srcList,
@@ -981,7 +1273,7 @@ internal sealed unsafe class MainWindow
                 }
                 _searchInFlight = false;
 
-                bool stale = _busy is not null || ActiveDocument.Id != active.Id;
+                bool stale = _busy is not null || _activeId != active.Id || _showHome;
                 if (!stale)
                 {
                     foreach (var snap in snapshots)
@@ -1015,8 +1307,11 @@ internal sealed unsafe class MainWindow
 
                 switch (outcome)
                 {
+                    case SearchOutcome.Navigated navigation:
+                        ApplyNavigation(command, query, origin, navigation, revisions);
+                        break;
                     case SearchOutcome.Found found:
-                        if (found.Hit is SearchHit hit)
+                        if (found.Hit is SearchHit hit && command != SearchCommand.List)
                         {
                             SelectTab(hit.Tab);
                             var targetDoc = _documents.Find(d => d.Id == hit.Tab);
@@ -1026,16 +1321,16 @@ internal sealed unsafe class MainWindow
                                 UpdateActiveCursor();
                             }
                             _lastSearchHit = (query, hit);
-                            _searchStatus = $"Совпадений: {found.Total}";
                         }
                         else
                         {
                             _lastSearchHit = null;
-                            _searchStatus = "Совпадений нет";
                         }
+                        ShowSearchResults(query, found, snapshots);
                         break;
 
                     case SearchOutcome.Replaced rep:
+                        ClearSearchResults();
                         ScintillaInterop.ReplaceByteRange(active.EditorHwnd, rep.Range.Start, rep.Range.End, rep.Text);
                         active.Dirty = true;
                         active.Revision++;
@@ -1045,6 +1340,7 @@ internal sealed unsafe class MainWindow
                         break;
 
                     case SearchOutcome.ReplacedUtf8 repUtf8:
+                        ClearSearchResults();
                         try
                         {
                             ScintillaInterop.ReplaceByteRangeUtf8(
@@ -1142,21 +1438,46 @@ internal sealed unsafe class MainWindow
         return result;
     }
 
-    private void OpenPaths(string[] paths, bool windows1251, bool viewAsLog, SessionTab? closedTab = null)
+    private void OpenPaths(string[] paths, bool windows1251, bool viewAsLog, SessionTab? closedTab = null, bool autoDetectLog = true)
     {
         if (paths.Length == 0 || _busy is not null)
         {
             return;
         }
 
+        var recentCopy = _recent.Clone();
+        var history = recentCopy.History.GroupBy(item => item.Path, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        var largeChoices = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        if (!viewAsLog && closedTab is null)
+        {
+            foreach (var rawPath in paths)
+            {
+                try
+                {
+                    var fullPath = Path.GetFullPath(rawPath);
+                    var version = FileVersion.At(fullPath);
+                    if (version is { } v && v.Bytes > LogLevels.LargeFilePromptBytes)
+                    {
+                        bool? choice = _settings.OpenLargeFilesAsLog ?? ChooseLargeFileModeDialog(fullPath, v.Bytes);
+                        if (choice is null) continue;
+                        largeChoices[fullPath] = choice.Value;
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
+
         _busy = "Открытие…";
         _error = null;
-        var recentCopy = _recent.Clone();
         InvalidateChrome();
 
         ThreadPool.QueueUserWorkItem(_ =>
         {
-            var loadedItems = new List<(NativeOpenedFile? Editor, FileTarget? LogTarget)>();
+            var loadedItems = new List<(NativeOpenedFile? Editor, FileTarget? LogTarget, bool EditPages)>();
             var recentBatch = new List<RecentFile>();
             string? firstError = null;
             int failures = 0;
@@ -1170,20 +1491,70 @@ internal sealed unsafe class MainWindow
                     var version = FileVersion.At(fullPath)
                         ?? throw new FileNotFoundException("Файл не найден", fullPath);
 
-                    if (viewAsLog || version.Bytes > Files.MaxEditorBytes)
+                    bool openAsLog;
+                    bool editPages;
+                    if (closedTab is not null)
+                    {
+                        openAsLog = closedTab.Log is not null || version.Bytes > Files.MaxEditorBytes;
+                        editPages = closedTab.EditPages ?? closedTab.Log?.EditPages ?? false;
+                    }
+                    else if (viewAsLog)
+                    {
+                        openAsLog = true;
+                        editPages = false;
+                    }
+                    else if (version.Bytes > LogLevels.LargeFilePromptBytes)
+                    {
+                        if (!largeChoices.TryGetValue(fullPath, out bool asLog))
+                        {
+                            continue;
+                        }
+                        openAsLog = true;
+                        editPages = !asLog;
+                    }
+                    else
+                    {
+                        var recentItem = history.GetValueOrDefault(fullPath);
+                        bool detectedLog = autoDetectLog &&
+                            (LogLevels.IsLogPath(fullPath) || string.Equals(Path.GetExtension(fullPath), ".txt", StringComparison.OrdinalIgnoreCase)) &&
+                            ((recentItem is { ViewAsLog: true } && recentItem.EditPages != true) ||
+                             LogLevels.HasLogRecords(fullPath, windows1251 ? TextEncoding.Windows1251 : null));
+
+                        if (detectedLog)
+                        {
+                            openAsLog = true;
+                            editPages = false;
+                        }
+                        else if (version.Bytes > Files.MaxEditorBytes)
+                        {
+                            openAsLog = true;
+                            editPages = true;
+                        }
+                        else
+                        {
+                            openAsLog = false;
+                            editPages = false;
+                        }
+                    }
+
+                    if (openAsLog)
                     {
                         var target = new FileTarget(fullPath, version);
-                        loadedItems.Add((null, target));
+                        loadedItems.Add((null, target, editPages));
                         recentBatch.Add(RecentFile.From(
                             fullPath,
                             windows1251 ? TextEncoding.Windows1251 : TextEncoding.Utf8,
-                            viewAsLog: true));
+                            viewAsLog: true,
+                            editPages: editPages));
                     }
                     else
                     {
                         var opened = Files.OpenForEditor(fullPath, windows1251);
-                        loadedItems.Add((opened, null));
-                        recentBatch.Add(RecentFile.From(opened.Target.Path, opened.Format.Encoding, viewAsLog: false));
+                        loadedItems.Add((opened, null, false));
+                        recentBatch.Add(RecentFile.From(opened.Target.Path, opened.Format.Encoding, viewAsLog: false, editPages: false) with
+                        {
+                            Lines = opened.LineCount ?? (ulong)ScintillaInterop.CountTextLines(opened.Span),
+                        });
                     }
                 }
                 catch (Exception ex)
@@ -1215,15 +1586,17 @@ internal sealed unsafe class MainWindow
 
                 foreach (var item in loadedItems)
                 {
+                    var path = item.LogTarget?.Path ?? item.Editor?.Target.Path;
+                    var restore = closedTab ?? (path is null ? null : history.GetValueOrDefault(path)?.Position);
                     if (item.LogTarget is { } logTarget)
                     {
-                        ShowLog(logTarget, windows1251, closedTab?.Log, closedTab?.Log is not null);
+                        ShowLog(logTarget, windows1251, restore?.Log?.Copy(), restore?.Log is not null, item.EditPages);
                     }
                     else if (item.Editor is { } opened)
                     {
                         using (opened)
                         {
-                            ShowOpened(opened, closedTab);
+                            ShowOpened(opened, restore, closedTab is not null);
                         }
                     }
                 }
@@ -1239,17 +1612,14 @@ internal sealed unsafe class MainWindow
                     _error = RecentWarning(historyError);
                 }
 
-                if (_documents.Count == 0)
-                {
-                    AddDocument(null);
-                }
+                if (_documents.Count == 0) ToggleHome();
 
                 InvalidateChrome();
             });
         });
     }
 
-    private void ShowOpened(NativeOpenedFile opened, SessionTab? restore = null)
+    private void ShowOpened(NativeOpenedFile opened, SessionTab? restore, bool reopeningClosed)
     {
         var existing = _documents.Find(d =>
             d.Log is null &&
@@ -1257,15 +1627,16 @@ internal sealed unsafe class MainWindow
             string.Equals(d.File.Path, opened.Target.Path, StringComparison.OrdinalIgnoreCase));
         if (existing is not null)
         {
-            if (Files.ShouldReplaceOpenedDocument(
+            bool replaced = Files.ShouldReplaceOpenedDocument(
                 existing.Dirty,
                 existing.Placeholder,
                 existing.File,
                 opened.Target,
                 existing.Format.Encoding,
-                opened.Format.Encoding))
+                opened.Format.Encoding);
+            if (replaced)
             {
-                ScintillaInterop.SetTextUtf8(existing.EditorHwnd, opened.Span);
+                ScintillaInterop.SetTextFromOpened(existing.EditorHwnd, opened);
                 ScintillaInterop.ApplyLanguage(existing.EditorHwnd, opened.Target.Path, (int)MathF.Round(_fontSize));
                 ScintillaInterop.SetSavePoint(existing.EditorHwnd);
                 existing.File = opened.Target;
@@ -1274,26 +1645,31 @@ internal sealed unsafe class MainWindow
                 existing.PendingEditorReady = true;
                 existing.DiskStatus = DiskStatusKind.Current;
                 existing.Dirty = false;
+                AttachFileWatch(existing);
+                UpdateEditorLinksAndLineNumbers(existing);
                 Win32.InvalidateRect(existing.EditorHwnd, null, false);
             }
             SelectTab(existing.Id);
+            if (restore is not null && !existing.Dirty && (replaced || reopeningClosed))
+                ApplyStoredTextPosition(existing, restore);
             return;
         }
 
-        RemoveInitialCleanUntitledTab();
         AddDocument(opened);
-        if (restore is not null && _documents.Count > 0)
+        if (restore is not null) ApplyStoredTextPosition(_documents[^1], restore);
+    }
+
+    private static void ApplyStoredTextPosition(Document doc, SessionTab restore)
+    {
+        doc.JsonDisabled = restore.JsonDisabled;
+        ScintillaInterop.SetSelection(doc.EditorHwnd, restore.Selection.Start, restore.Selection.End, restore.Reversed);
+        if (restore.Scroll.Length >= 2)
         {
-            var doc = _documents[^1];
-            ScintillaInterop.SetSelection(doc.EditorHwnd, restore.Selection.Start, restore.Selection.End, restore.Reversed);
-            if (restore.Scroll.Length >= 2)
-            {
-                ScintillaInterop.SetScroll(doc.EditorHwnd, (int)restore.Scroll[0], (int)restore.Scroll[1]);
-            }
+            ScintillaInterop.SetScroll(doc.EditorHwnd, (int)restore.Scroll[0], (int)restore.Scroll[1]);
         }
     }
 
-    private void ShowLog(FileTarget target, bool windows1251, LogBookmark? restoredBookmark, bool restored)
+    private void ShowLog(FileTarget target, bool windows1251, LogBookmark? restoredBookmark, bool restored, bool editPages = false)
     {
         var existing = _documents.Find(d =>
             d.Log is not null &&
@@ -1306,23 +1682,12 @@ internal sealed unsafe class MainWindow
             return;
         }
 
-        RemoveInitialCleanUntitledTab();
-        AddLogDocument(target, windows1251, restoredBookmark, restored);
-    }
-
-    private void RemoveInitialCleanUntitledTab()
-    {
-        if (_documents.Count == 1 && _documents[0].File is null && !_documents[0].Dirty && !_documents[0].Placeholder && _documents[0].Log is null)
-        {
-            _documents[0].Log?.Dispose();
-            Win32.DestroyWindow(_documents[0].EditorHwnd);
-            _documents.Clear();
-        }
+        AddLogDocument(target, windows1251, restoredBookmark, restored, editPages);
     }
 
     private void Save(bool saveAs)
     {
-        if (_busy is not null) return;
+        if (_busy is not null || !HasDocument || _showHome) return;
         var doc = ActiveDocument;
         if (doc.Log is not null) return;
 
@@ -1335,20 +1700,31 @@ internal sealed unsafe class MainWindow
 
         string initialDir = doc.File is not null ? Path.GetDirectoryName(doc.File.Path) ?? "" : "";
         string suggested = doc.File is not null ? doc.Name : "Без имени.txt";
+        string? pickedPath = PickSavePath(_hwnd, suggested, initialDir, "Сохранить как");
+        if (pickedPath is null) return;
+        try { WriteFile(doc.Id, FileTarget.FromPicker(pickedPath)); }
+        catch (Exception ex)
+        {
+            _error = $"Не удалось выбрать файл. {ex.Message}";
+            InvalidateChrome();
+        }
+    }
+
+    private static string? PickSavePath(nint owner, string suggested, string initialDir, string title)
+    {
         var buffer = new char[4096];
         suggested.CopyTo(buffer);
         var filter = "Все файлы\0*.*\0Текстовые файлы (*.txt)\0*.txt\0\0";
 
-        string? pickedPath = null;
         fixed (char* pBuf = buffer)
         fixed (char* pFilter = filter)
         fixed (char* pDir = string.IsNullOrEmpty(initialDir) ? null : initialDir)
-        fixed (char* pTitle = "Сохранить как")
+        fixed (char* pTitle = title)
         {
             var ofn = new Win32.OPENFILENAMEW
             {
                 lStructSize = (uint)sizeof(Win32.OPENFILENAMEW),
-                hwndOwner = _hwnd,
+                hwndOwner = owner,
                 lpstrFilter = pFilter,
                 nFilterIndex = 1,
                 lpstrFile = pBuf,
@@ -1358,20 +1734,9 @@ internal sealed unsafe class MainWindow
                 Flags = Win32.OFN_EXPLORER | Win32.OFN_PATHMUSTEXIST | Win32.OFN_OVERWRITEPROMPT | Win32.OFN_NOCHANGEDIR,
             };
 
-            if (!Win32.GetSaveFileNameW(&ofn)) return;
+            if (!Win32.GetSaveFileNameW(&ofn)) return null;
             int end = Array.IndexOf(buffer, '\0');
-            pickedPath = end >= 0 ? new string(buffer, 0, end) : new string(buffer);
-        }
-
-        try
-        {
-            var target = FileTarget.FromPicker(pickedPath);
-            WriteFile(doc.Id, target);
-        }
-        catch (Exception ex)
-        {
-            _error = $"Не удалось выбрать файл. {ex.Message}";
-            InvalidateChrome();
+            return end >= 0 ? new string(buffer, 0, end) : new string(buffer);
         }
     }
 
@@ -1397,6 +1762,9 @@ internal sealed unsafe class MainWindow
         }
 
         var snapshot = ScintillaInterop.CopyUtf8Bytes(doc.EditorHwnd);
+        ulong revision = doc.Revision;
+        ulong lineCount = (ulong)ScintillaInterop.GetLineCount(doc.EditorHwnd);
+        var settings = _settings;
         var format = doc.Format;
         var recentCopy = _recent.Clone();
         _busy = "Сохранение…";
@@ -1407,13 +1775,18 @@ internal sealed unsafe class MainWindow
             FileTarget? savedTarget = null;
             Exception? saveError = null;
             Exception? historyError = null;
+            Exception? versionError = null;
 
             try
             {
+                var icon = DesktopIcon.Capture(target);
                 savedTarget = Files.Save(target, format, snapshot);
+                if (icon is { } position) DesktopIcon.Restore(savedTarget, position);
+                try { new FileVersions().Capture(savedTarget, format.Encoding, settings); }
+                catch (Exception error) { versionError = error; }
                 try
                 {
-                    recentCopy.Record([RecentFile.From(savedTarget.Path, format.Encoding, false)]);
+                    recentCopy.Record([RecentFile.From(savedTarget.Path, format.Encoding, false) with { Lines = lineCount }]);
                 }
                 catch (Exception ex)
                 {
@@ -1436,6 +1809,7 @@ internal sealed unsafe class MainWindow
                 else if (savedTarget is not null)
                 {
                     if (historyError is not null) _error = RecentWarning(historyError);
+                    else if (versionError is not null) _error = $"Файл сохранён. Не удалось записать версию. {versionError.Message}";
 
                     var targetDoc = _documents.Find(d => d.Id == id);
                     if (targetDoc is not null)
@@ -1446,12 +1820,18 @@ internal sealed unsafe class MainWindow
                         targetDoc.File = savedTarget;
                         targetDoc.Placeholder = false;
                         targetDoc.DiskStatus = DiskStatusKind.Current;
-                        ScintillaInterop.SetSavePoint(targetDoc.EditorHwnd);
-                        targetDoc.Dirty = false;
+                        if (targetDoc.Revision == revision)
+                        {
+                            ScintillaInterop.SetSavePoint(targetDoc.EditorHwnd);
+                            targetDoc.Dirty = false;
+                        }
+                        else targetDoc.Dirty = true;
                         if (pathChanged)
                         {
                             ScintillaInterop.ApplyLanguage(targetDoc.EditorHwnd, savedTarget.Path, (int)MathF.Round(_fontSize));
+                            AttachFileWatch(targetDoc);
                         }
+                        PropagateSharedDocumentSaved(targetDoc);
                     }
                 }
                 InvalidateChrome();
@@ -1476,7 +1856,11 @@ internal sealed unsafe class MainWindow
                 for (int i = _closed.Count - 1; i >= 0; i--)
                 {
                     var (tab, draft) = _closed[i];
-                    Win32.AppendMenuW(closedMenu, Win32.MF_STRING, (nuint)(ClosedCmdBase + i), ClosedTabLabel(tab, draft));
+                    var file = tab.File is { } target ? _recent.History.FirstOrDefault(item =>
+                        string.Equals(item.Path, target.Path, StringComparison.OrdinalIgnoreCase)) : null;
+                    string label = ClosedTabLabel(tab, draft) + HistoryMetadata(tab.LineCount ?? file?.Lines,
+                        tab.LastWorked ?? (file is null ? null : LastWorked(file)));
+                    Win32.AppendMenuW(closedMenu, Win32.MF_STRING, (nuint)(ClosedCmdBase + i), label);
                 }
             }
             Win32.AppendMenuW(menu, Win32.MF_POPUP, (nuint)closedMenu, "Закрытые вкладки");
@@ -1494,7 +1878,8 @@ internal sealed unsafe class MainWindow
                     var entry = entries[i];
                     var name = FileName(entry.Path);
                     var dir = Path.GetDirectoryName(entry.Path) ?? "";
-                    Win32.AppendMenuW(menu, Win32.MF_STRING, (nuint)(i + 1), $"{name} – {DisplayPath(dir)}");
+                    Win32.AppendMenuW(menu, Win32.MF_STRING, (nuint)(i + 1),
+                        $"{name} – {DisplayPath(dir)}" + HistoryMetadata(entry.Lines, LastWorked(entry)));
                 }
             }
 
@@ -1539,20 +1924,8 @@ internal sealed unsafe class MainWindow
 
     private void ProcessIncomingIpc()
     {
-        if (_singleInstance is null || _busy is not null) return;
-        while (_singleInstance.TryReceive(out var req) && req is not null)
-        {
-            if (req.Activate)
-            {
-                Win32.ShowWindow(_hwnd, Win32.SW_SHOW);
-                Win32.SetForegroundWindow(_hwnd);
-            }
-            var abs = req.ResolveAbsolutePaths();
-            if (abs.Length > 0)
-            {
-                OpenPaths(abs, false, false);
-            }
-        }
+        if (_busy is not null) return;
+        WorkspaceSession.Current.RouteIncomingIpc(WorkspaceSession.Current.SingleInstance ?? _singleInstance);
     }
 
     private void OnFastTimer()
@@ -1560,8 +1933,11 @@ internal sealed unsafe class MainWindow
         _fastTicks++;
 
         ProcessIncomingIpc();
+        TickJsonValidation();
+        foreach (var doc in _documents) FlushLogScroll(doc);
+        if (_showHome && _fastTicks % 80 == 0) UpdateHistory();
 
-        if (_documents.Count > 0 && ActiveDocument.Log is { } activeLog)
+        if (HasDocument && ActiveDocument.Log is { } activeLog)
         {
             if (activeLog.IndexProgress is not null || activeLog.PrepProgress is not null || activeLog.TrimProgress is not null || activeLog.SearchProgress is not null)
             {
@@ -1580,8 +1956,15 @@ internal sealed unsafe class MainWindow
 
     private void OnSlowTimer()
     {
+        _slowTicks++;
         CheckDiskStatusTick();
         QueueSessionTick();
+        if (_slowTicks % 60 == 0)
+        {
+            RunIdleUnloadPass();
+            RunDraftArchivePass();
+            CheckUpdatesIfHourlyDue();
+        }
         Measurements.DumpMemoryProfile($"t={_fastTicks * 125}ms");
     }
 
@@ -1624,8 +2007,25 @@ internal sealed unsafe class MainWindow
         });
     }
 
-    private static (SessionTab Tab, byte[]? DraftBytes) SnapshotDocument(Document doc, bool includeDraft)
+    private (SessionTab Tab, byte[]? DraftBytes) SnapshotDocument(Document doc, bool includeDraft)
     {
+        if (doc.IdleUnloaded && doc.DeferredState is { } deferred)
+        {
+            byte[]? deferredDraft = includeDraft && deferred.DraftRevision is not null
+                ? TryReadSessionDraftBytes(doc, deferred)
+                : null;
+            return (
+                deferred with
+                {
+                    Group = doc.Group,
+                    CustomTitle = doc.CustomTitle,
+                    AutoRefresh = doc.AutoRefresh,
+                    EditPages = doc.EditPages,
+                    LastWorked = doc.LastWorked ?? deferred.LastWorked,
+                },
+                deferredDraft);
+        }
+
         SessionFileTarget? sFile = doc.File is null
             ? null
             : new SessionFileTarget(
@@ -1639,6 +2039,8 @@ internal sealed unsafe class MainWindow
 
         if (doc.Log is { } log)
         {
+            var bookmark = log.Bookmark.Copy();
+            if (doc.Viewport?.VisibleLogOffset is { } visible) bookmark.Offset = visible;
             return (
                 new SessionTab(
                     doc.Id,
@@ -1648,7 +2050,12 @@ internal sealed unsafe class MainWindow
                     false,
                     [0f, 0f],
                     null,
-                    log.Bookmark),
+                    bookmark, doc.Group, false, KnownLineCount(doc), doc.LastWorked)
+                {
+                    CustomTitle = doc.CustomTitle,
+                    AutoRefresh = doc.AutoRefresh,
+                    EditPages = doc.EditPages,
+                },
                 null);
         }
 
@@ -1656,8 +2063,11 @@ internal sealed unsafe class MainWindow
         var (sx, sy) = ScintillaInterop.GetScroll(doc.EditorHwnd);
         if (includeDraft && doc.Dirty)
         {
-            doc.DraftRevision = (doc.DraftRevision ?? 0) + 1;
-            var bytes = ScintillaInterop.CopyUtf8Bytes(doc.EditorHwnd);
+            if (doc.DraftBytes is null)
+            {
+                doc.DraftRevision = (doc.DraftRevision ?? 0) + 1;
+                doc.DraftBytes = ScintillaInterop.CopyUtf8Bytes(doc.EditorHwnd);
+            }
             return (
                 new SessionTab(
                     doc.Id,
@@ -1667,8 +2077,13 @@ internal sealed unsafe class MainWindow
                     reversed,
                     [sx, sy],
                     doc.DraftRevision,
-                    null),
-                bytes);
+                    null, doc.Group, doc.JsonDisabled, KnownLineCount(doc), doc.LastWorked)
+                {
+                    CustomTitle = doc.CustomTitle,
+                    AutoRefresh = doc.AutoRefresh,
+                    EditPages = doc.EditPages,
+                },
+                doc.DraftBytes);
         }
 
         return (
@@ -1680,7 +2095,12 @@ internal sealed unsafe class MainWindow
                 reversed,
                 [sx, sy],
                 null,
-                null),
+                null, doc.Group, doc.JsonDisabled, KnownLineCount(doc), doc.LastWorked)
+            {
+                CustomTitle = doc.CustomTitle,
+                AutoRefresh = doc.AutoRefresh,
+                EditPages = doc.EditPages,
+            },
             null);
     }
 
@@ -1716,13 +2136,14 @@ internal sealed unsafe class MainWindow
             }
         }
 
-        var state = new SessionState(tabs, activeIdx, new SessionWindow(w, h, maximized), _wrap, _fontSize, closedTabs);
+        var state = new SessionState(tabs, activeIdx, new SessionWindow(w, h, maximized), _wrap, _fontSize, closedTabs,
+            _panes, CaptureGroupTabs(), SplitView ? _activeGroup : null);
         return new SessionCapture(state, payloads, closedPayloads);
     }
 
     private void QueueSessionTick()
     {
-        if (_sessionJournal is null || _closingForSession) return;
+        if (_sessionJournal is null || _closingForSession || _sessionWriter.IsInFlight) return;
         var queued = _sessionWriter.Queue(CaptureSession());
         if (queued is not { Revision: var rev, Capture: var cap }) return;
 
@@ -1805,7 +2226,7 @@ internal sealed unsafe class MainWindow
                 if (err is null)
                 {
                     _sessionShutdownDone = true;
-                    Win32.DestroyWindow(_hwnd);
+                    FinishClosing();
                     return;
                 }
 
@@ -1816,11 +2237,13 @@ internal sealed unsafe class MainWindow
                     Win32.MB_YESNO | Win32.MB_ICONWARNING);
                 if (ans == Win32.IDYES)
                 {
+                    _restartForUpdate = false;
                     _sessionShutdownDone = true;
-                    Win32.DestroyWindow(_hwnd);
+                    FinishClosing();
                 }
                 else
                 {
+                    _restartForUpdate = false;
                     InvalidateChrome();
                 }
             });
@@ -1831,16 +2254,18 @@ internal sealed unsafe class MainWindow
 
     private void RestoreSession(RecoveredSession recovered)
     {
+        _restoringSession = true;
         ulong maxId = 0;
         foreach (var t in recovered.State.Tabs)
             if (t.Id > maxId) maxId = t.Id;
         if (recovered.State.Closed is { } closedList)
         {
-            for (int i = 0; i < closedList.Count; i++)
+            var (filteredTabs, filteredTexts) = SessionJournal.FilterClosedHistory(closedList, recovered.ClosedDraftTexts);
+            for (int i = 0; i < filteredTabs.Count; i++)
             {
-                var ct = closedList[i];
+                var ct = filteredTabs[i];
                 if (ct.Id > maxId) maxId = ct.Id;
-                string? ctDraft = i < recovered.ClosedDraftTexts.Count ? recovered.ClosedDraftTexts[i] : null;
+                string? ctDraft = i < filteredTexts.Count ? filteredTexts[i] : null;
                 _closed.Add((ct, ctDraft is null ? null : Encoding.UTF8.GetBytes(ctDraft)));
             }
         }
@@ -1848,18 +2273,25 @@ internal sealed unsafe class MainWindow
 
         for (int i = 0; i < recovered.State.Tabs.Count; i++)
         {
-            RestoreTextTab(recovered.State.Tabs[i], recovered.DraftTexts[i]);
+            var tab = recovered.State.Tabs[i];
+            ulong id = RestoreTextTab(tab, recovered.DraftTexts[i]);
+            var restored = _documents.Find(doc => doc.Id == id);
+            if (restored is not null && recovered.State.Panes is not null) restored.Group = tab.Group;
         }
+        RestoreGroups(recovered.State);
 
         if (_documents.Count == 0)
         {
-            AddDocument(null);
+            _showHome = true;
         }
         else
         {
             int idx = Math.Clamp(recovered.State.Active, 0, _documents.Count - 1);
             SelectTab(_documents[idx].Id);
+            if (recovered.State.FocusedGroup is { } focused && focused != _activeGroup && _groupBounds.ContainsKey(focused) &&
+                !_documents.Exists(doc => doc.Group == focused)) FocusEmptyGroup(focused);
         }
+        _restoringSession = false;
     }
 
     private ulong RestoreTextTab(SessionTab tab, string? draft)
@@ -1868,8 +2300,15 @@ internal sealed unsafe class MainWindow
         {
             var ver = tab.File.Version is { } sv ? new FileVersion(sv.Bytes, sv.ModifiedUtc, sv.CreatedUtc) : (FileVersion?)null;
             bool win1251 = string.Equals(tab.Format.Encoding, nameof(TextEncoding.Windows1251), StringComparison.OrdinalIgnoreCase);
-            ShowLog(new FileTarget(tab.File.Path, ver), win1251, tab.Log, restored: true);
-            return _documents[^1].Id;
+            var bookmark = tab.Log.Copy();
+            if (tab.AutoRefresh is { } ar) bookmark.AutoRefresh = ar;
+            if (tab.EditPages is { } ep) bookmark.EditPages = ep;
+            AddLogDocument(new FileTarget(tab.File.Path, ver), win1251, bookmark, restored: true, editPages: bookmark.EditPages);
+            var logDoc = _documents[^1];
+            logDoc.LastWorked = tab.LastWorked;
+            logDoc.CustomTitle = tab.CustomTitle;
+            if (!string.IsNullOrWhiteSpace(tab.CustomTitle)) logDoc.Name = tab.CustomTitle;
+            return logDoc.Id;
         }
 
         FileTarget? fileTarget = tab.File is null
@@ -1879,19 +2318,6 @@ internal sealed unsafe class MainWindow
                 tab.File.Version is { } v ? new FileVersion(v.Bytes, v.ModifiedUtc, v.CreatedUtc) : null);
 
         bool win1251Doc = string.Equals(tab.Format.Encoding, nameof(TextEncoding.Windows1251), StringComparison.OrdinalIgnoreCase);
-        OpenedFile? diskOpened = null;
-        Exception? diskError = null;
-        if (fileTarget is not null)
-        {
-            try
-            {
-                diskOpened = Files.Open(fileTarget.Path, win1251Doc);
-            }
-            catch (Exception ex)
-            {
-                diskError = ex;
-            }
-        }
 
         var enc = Enum.TryParse<TextEncoding>(tab.Format.Encoding, out var pe) ? pe : TextEncoding.Utf8;
         var eol = Enum.TryParse<LineEndings>(tab.Format.LineEndings, out var pl) ? pl : LineEndings.Lf;
@@ -1899,61 +2325,96 @@ internal sealed unsafe class MainWindow
 
         ulong id = _nextId++;
         var editorHwnd = ScintillaInterop.CreateEditorControl(_hwnd, _hInstance, (int)MathF.Round(_fontSize), _wrap);
+        InstallEditorSubclass(editorHwnd);
         var doc = new Document
         {
             Id = id,
-            Name = fileTarget is null ? "Без имени" : FileName(fileTarget.Path),
+            Group = _activeGroup,
+            JsonDisabled = tab.JsonDisabled,
+            LastWorked = tab.LastWorked,
+            StoredLineCount = tab.LineCount,
+            CustomTitle = tab.CustomTitle,
+            AutoRefresh = tab.AutoRefresh ?? true,
+            EditPages = tab.EditPages ?? false,
+            Name = !string.IsNullOrWhiteSpace(tab.CustomTitle) ? tab.CustomTitle : fileTarget is null ? "Без имени" : FileName(fileTarget.Path),
             File = fileTarget,
             Format = restoredFormat,
             EditorHwnd = editorHwnd,
         };
 
-        if (draft is not null)
+        bool attachedShared = draft is null && TryAttachSharedScintillaDocument(doc);
+        if (!attachedShared)
         {
-            var draftBytes = Encoding.UTF8.GetBytes(draft);
-            ScintillaInterop.SetTextUtf8(editorHwnd, draftBytes);
-            doc.Dirty = true;
-            doc.DraftRevision = tab.DraftRevision;
-
-            if (diskOpened is not null && fileTarget is not null && diskOpened.Target.Version == fileTarget.Version)
+            OpenedFile? diskOpened = null;
+            Exception? diskError = null;
+            if (fileTarget is not null)
             {
-                doc.DiskStatus = DiskStatusKind.Current;
+                try
+                {
+                    diskOpened = Files.Open(fileTarget.Path, win1251Doc);
+                }
+                catch (Exception ex)
+                {
+                    diskError = ex;
+                }
+            }
+
+            if (draft is not null)
+            {
+                var draftBytes = Encoding.UTF8.GetBytes(draft);
+                ScintillaInterop.SetTextUtf8(editorHwnd, draftBytes);
+                doc.Dirty = true;
+                doc.DraftRevision = tab.DraftRevision;
+                doc.DraftBytes = draftBytes;
+
+                if (diskOpened is not null && fileTarget is not null && diskOpened.Target.Version == fileTarget.Version)
+                {
+                    doc.DiskStatus = DiskStatusKind.Current;
+                }
+                else if (diskOpened is not null)
+                {
+                    doc.DiskStatus = DiskStatusKind.Changed;
+                }
+                else if (diskError is not null)
+                {
+                    doc.DiskStatus = DiskStatus.FromException(diskError);
+                }
             }
             else if (diskOpened is not null)
             {
-                doc.DiskStatus = DiskStatusKind.Changed;
+                ScintillaInterop.SetTextUtf8(editorHwnd, diskOpened.Utf8Bytes);
+                doc.File = diskOpened.Target;
+                doc.Format = diskOpened.Format;
+                doc.Dirty = false;
             }
             else if (diskError is not null)
             {
                 doc.DiskStatus = DiskStatus.FromException(diskError);
+                doc.Placeholder = true;
+            }
+
+            ScintillaInterop.ApplyLanguage(editorHwnd, doc.File?.Path, (int)MathF.Round(_fontSize));
+            if (!doc.Dirty && diskOpened is not null)
+            {
+                ScintillaInterop.SetSavePoint(editorHwnd);
             }
         }
-        else if (diskOpened is not null)
-        {
-            ScintillaInterop.SetTextUtf8(editorHwnd, diskOpened.Utf8Bytes);
-            doc.File = diskOpened.Target;
-            doc.Format = diskOpened.Format;
-            doc.Dirty = false;
-        }
-        else if (diskError is not null)
-        {
-            doc.DiskStatus = DiskStatus.FromException(diskError);
-            doc.Placeholder = true;
-        }
 
-        ScintillaInterop.ApplyLanguage(editorHwnd, doc.File?.Path, (int)MathF.Round(_fontSize));
         ScintillaInterop.SetSelection(editorHwnd, tab.Selection.Start, tab.Selection.End, tab.Reversed);
         if (tab.Scroll.Length >= 2)
         {
             ScintillaInterop.SetScroll(editorHwnd, (int)tab.Scroll[0], (int)tab.Scroll[1]);
         }
         _documents.Add(doc);
+        UpdateUntitledName(doc);
+        AttachFileWatch(doc);
+        UpdateEditorLinksAndLineNumbers(doc);
         return id;
     }
 
     private void SyncLogInputsAndHits()
     {
-        if (_documents.Count == 0) return;
+        if (!HasDocument) return;
         var doc = ActiveDocument;
         var log = doc.Log;
         if (log is null) return;
@@ -1972,7 +2433,8 @@ internal sealed unsafe class MainWindow
                 Win32.SendMessageW(_logSearchList, Win32.LB_RESETCONTENT, 0, 0);
                 foreach (var hit in log.SearchHits)
                 {
-                    Win32.SendMessageW(_logSearchList, Win32.LB_ADDSTRING, 0, $"Байт {hit.LineStart}: {hit.Preview}");
+                    string position = hit.Line is { } number ? $"Строка {number:N0}" : $"Байт {hit.LineStart:N0}";
+                    Win32.SendMessageW(_logSearchList, Win32.LB_ADDSTRING, 0, $"{position} · {hit.Preview}");
                 }
             }
         }
@@ -2023,21 +2485,16 @@ internal sealed unsafe class MainWindow
     private int TopChromeLogicalHeight()
     {
         int h = ToolbarLogicalHeight + TabBarLogicalHeight;
-        if (_documents.Count > 0 && ActiveDocument.Log is { } log)
+        if (!_showHome && HasDocument && ActiveDocument.Log is { } log)
         {
             h += LogToolbarLogicalHeight;
-            if (log.SearchOpen) h += LogSearchLogicalHeight;
-        }
-        else if (_searchOpen)
-        {
-            h += EditorSearchLogicalHeight;
         }
         return h;
     }
 
     private void LayoutAndSyncControls()
     {
-        if (_hwnd == 0 || _documents.Count == 0)
+        if (_hwnd == 0)
         {
             return;
         }
@@ -2046,55 +2503,57 @@ internal sealed unsafe class MainWindow
         Win32.GetClientRect(_hwnd, &client);
         int topH = S(TopChromeLogicalHeight());
         int botH = S(StatusLogicalHeight);
-        int editorH = Math.Max(0, client.Height - topH - botH);
+        int statusTop = Math.Max(topH, client.Height - botH);
+        int bottom = BottomPanelsTop(statusTop);
+        LayoutGroups(new Win32.RECT { Left = 0, Right = client.Width, Top = topH, Bottom = bottom });
+        InvalidateScrollbars();
+        LayoutHome(client, topH, bottom);
 
-        foreach (var doc in _documents)
-        {
-            Win32.MoveWindow(doc.EditorHwnd, 0, topH, client.Width, editorH, true);
-        }
+        bool hasDocument = !_showHome && HasDocument;
+        bool isLog = hasDocument && ActiveDocument.Log is not null;
 
-        bool isLog = ActiveDocument.Log is not null;
-        int yBase = S(ToolbarLogicalHeight + TabBarLogicalHeight);
 
-        if (!isLog && _searchOpen)
+        if (hasDocument && !isLog && _searchOpen)
         {
             int pad = S(12);
             int editH = S(26);
-            int qW = Math.Clamp(client.Width / 3, S(160), S(340));
-            Win32.MoveWindow(_searchQueryEdit, pad, yBase + S(8), qW, editH, true);
-            Win32.MoveWindow(_searchReplaceEdit, pad, yBase + S(42), qW, editH, true);
+            int qW = Math.Clamp(client.Width / 4, S(145), S(320));
+            int searchTop = bottom;
+            int searchBottom = statusTop - GetLogFilterPanelHeight();
+            Win32.MoveWindow(_searchQueryEdit, pad, searchTop + S(5), qW, editH, true);
+            Win32.MoveWindow(_searchReplaceEdit, pad, searchTop + S(36), qW, editH, true);
+            Win32.MoveWindow(_textSearchList, pad, searchTop + S(69), Math.Max(0, client.Width - pad * 2),
+                Math.Max(0, searchBottom - searchTop - S(76)), true);
             Win32.ShowWindow(_searchQueryEdit, Win32.SW_SHOW);
-            Win32.ShowWindow(_searchReplaceEdit, Win32.SW_SHOW);
-            Win32.EnableWindow(_searchReplaceEdit, !_searchAllTabs);
+            Win32.ShowWindow(_searchReplaceEdit, _replaceOpen ? Win32.SW_SHOW : Win32.SW_HIDE);
+            Win32.ShowWindow(_textSearchList, _searchListExpanded ? Win32.SW_SHOW : Win32.SW_HIDE);
         }
         else
         {
             Win32.ShowWindow(_searchQueryEdit, Win32.SW_HIDE);
             Win32.ShowWindow(_searchReplaceEdit, Win32.SW_HIDE);
+            Win32.ShowWindow(_textSearchList, Win32.SW_HIDE);
         }
 
         if (isLog && ActiveDocument.Log is { } log)
         {
-            int row1Y = yBase + S(8);
-            int row3Y = yBase + S(76);
+            int row1Y = statusTop - S(LogNavigationLogicalHeight) + S(5);
             int pad = S(12);
             int btnH = S(26);
 
-            int navW = S(72 + 64 + 74 + 62) + S(16);
-            Win32.MoveWindow(_logJumpEdit, pad + navW, row1Y, S(72), btnH, true);
+            Win32.MoveWindow(_logJumpEdit, S(335), row1Y, S(70), btnH, true);
             Win32.ShowWindow(_logJumpEdit, Win32.SW_SHOW);
 
-            Win32.MoveWindow(_logTrimEdit, pad + S(74), row3Y, S(63), btnH, true);
-            Win32.ShowWindow(_logTrimEdit, Win32.SW_SHOW);
+            Win32.ShowWindow(_logTrimEdit, Win32.SW_HIDE);
 
             if (log.SearchOpen)
             {
-                int sTop = yBase + S(LogToolbarLogicalHeight);
+                int sTop = bottom;
                 int qW = Math.Clamp(client.Width / 3, S(160), S(320));
                 Win32.MoveWindow(_logSearchEdit, pad, sTop + S(8), qW, btnH, true);
                 Win32.ShowWindow(_logSearchEdit, Win32.SW_SHOW);
 
-                Win32.MoveWindow(_logSearchList, pad, sTop + S(66), Math.Max(S(200), client.Width - pad * 2), S(78), true);
+                Win32.MoveWindow(_logSearchList, pad, sTop + S(65), Math.Max(S(200), client.Width - pad * 2), Math.Max(0, statusTop - S(LogNavigationLogicalHeight) - GetLogFilterPanelHeight() - sTop - S(69)), true);
                 Win32.ShowWindow(_logSearchList, Win32.SW_SHOW);
             }
             else
@@ -2118,23 +2577,31 @@ internal sealed unsafe class MainWindow
         Win32.RECT client;
         Win32.GetClientRect(_hwnd, &client);
         var topRect = new Win32.RECT { Left = 0, Top = 0, Right = client.Width, Bottom = S(TopChromeLogicalHeight()) };
-        var botRect = new Win32.RECT { Left = 0, Top = Math.Max(0, client.Height - S(StatusLogicalHeight)), Right = client.Width, Bottom = client.Height };
+        var botRect = new Win32.RECT { Left = 0, Top = BottomPanelsTop(Math.Max(0, client.Height - S(StatusLogicalHeight))), Right = client.Width, Bottom = client.Height };
         Win32.InvalidateRect(_hwnd, &topRect, false);
         Win32.InvalidateRect(_hwnd, &botRect, false);
+        if (_showHome || SplitView)
+        {
+            var body = new Win32.RECT { Left = 0, Right = client.Width, Top = topRect.Bottom, Bottom = botRect.Top };
+            Win32.InvalidateRect(_hwnd, &body, false);
+        }
     }
 
     private void UpdateActiveCursor()
     {
-        if (_documents.Count == 0 || ActiveDocument.Log is not null) return;
+        if (!HasDocument || ActiveDocument.Log is not null) return;
         var doc = ActiveDocument;
         var (line, col) = ScintillaInterop.GetCursorPosition(doc.EditorHwnd);
-        if (line != doc.CursorLine || col != doc.CursorColumn)
+        int selected = ScintillaInterop.CountSelectedChars(doc.EditorHwnd, out int carets);
+        if (line != doc.CursorLine || col != doc.CursorColumn || selected != doc.LastSelectedChars || carets != doc.LastCaretCount)
         {
             doc.CursorLine = line;
             doc.CursorColumn = col;
+            doc.LastSelectedChars = selected;
+            doc.LastCaretCount = carets;
             InvalidateChrome();
         }
-        ScintillaInterop.UpdateLineNumberMarginWidth(doc.EditorHwnd);
+        UpdateEditorLinksAndLineNumbers(doc);
     }
 
     private void Paint(nint hdc, Win32.RECT client)
@@ -2161,7 +2628,7 @@ internal sealed unsafe class MainWindow
                     Win32.SetBkMode(topDc, Win32.TRANSPARENT);
 
                     var toolbarRect = new Win32.RECT { Left = 0, Top = 0, Right = client.Width, Bottom = toolbarH };
-                    Win32.FillRect(topDc, &toolbarRect, _panelBrush);
+                    PaintTitleBarBackground(topDc, toolbarRect);
                     DrawHLine(topDc, 0, toolbarH - 1, client.Width, ThemePalette.Border);
                     PaintToolbar(topDc, client.Width, toolbarH);
 
@@ -2177,13 +2644,9 @@ internal sealed unsafe class MainWindow
                         Win32.FillRect(topDc, &panelRect, _panelBrush);
                         DrawHLine(topDc, 0, totalTopH - 1, client.Width, ThemePalette.Border);
 
-                        if (_documents.Count > 0 && ActiveDocument.Log is { } log)
+                        if (HasDocument && ActiveDocument.Log is { } log)
                         {
-                            PaintLogToolbarAndSearch(topDc, client.Width, panelTop, log);
-                        }
-                        else if (_searchOpen)
-                        {
-                            PaintEditorSearch(topDc, client.Width, panelTop);
+                            PaintLogToolbar(topDc, client.Width, panelTop, log);
                         }
                     }
 
@@ -2198,6 +2661,50 @@ internal sealed unsafe class MainWindow
         }
 
         nint statusDc = _statusBuffer.Ensure(hdc, client.Width, statusActualH);
+        Win32.SetBkMode(hdc, Win32.TRANSPARENT);
+        nint oldBodyFont = Win32.SelectObject(hdc, _uiFont);
+        int panelBottom = BottomPanelsTop(statusTop);
+        if (_showHome)
+        {
+            PaintHome(hdc, new Win32.RECT { Left = 0, Right = client.Width, Top = totalTopH, Bottom = panelBottom });
+        }
+        else
+        {
+            PaintGroupHeaders(hdc);
+            foreach (var (group, bounds) in _groupBounds)
+            {
+                ulong tabId = _groupTabs.GetValueOrDefault(group);
+                var groupDoc = tabId == 0 ? null : _documents.Find(d => d.Id == tabId);
+                if (groupDoc is not null && (groupDoc.CheckingSession || groupDoc.IdleUnloaded))
+                {
+                    var area = bounds;
+                    if (SplitView) area.Top += S(29);
+                    PaintDeferredSurface(hdc, groupDoc, area);
+                }
+            }
+        }
+        PaintDocumentScrollbars(hdc);
+        if (panelBottom < statusTop)
+        {
+            var panel = new Win32.RECT { Left = 0, Right = client.Width, Top = panelBottom, Bottom = statusTop };
+            Win32.FillRect(hdc, &panel, _panelBrush);
+            if (HasDocument && ActiveDocument.Log is { } log)
+            {
+                PaintLogBottom(hdc, client.Width, panelBottom, statusTop, log);
+            }
+            else if (HasDocument)
+            {
+                if (_searchOpen)
+                {
+                    PaintUpgradedEditorSearch(hdc, client.Width, panelBottom);
+                }
+                if (_logFilterOpen)
+                {
+                    PaintLogLevelFilterPanel(hdc, client.Width, statusTop - GetLogFilterPanelHeight());
+                }
+            }
+        }
+        Win32.SelectObject(hdc, oldBodyFont);
         if (statusDc != 0)
         {
             nint oldStatusFont = Win32.SelectObject(statusDc, _uiFont);
@@ -2219,141 +2726,58 @@ internal sealed unsafe class MainWindow
 
     private void PaintToolbar(nint hdc, int width, int height)
     {
-        bool busy = _busy is not null;
-        bool isLog = _documents.Count > 0 && ActiveDocument.Log is not null;
         int padX = S(12);
         int gap = S(4);
         int btnH = S(28);
         int y = (height - btnH) / 2;
         int x = padX;
 
-        x = DrawButton(hdc, x, y, btnH, "Создать", HitKind.BtnNew, 0, false, false) + gap;
-        x = DrawButton(hdc, x, y, btnH, "Открыть", HitKind.BtnOpen, 0, busy, false) + gap;
-        x = DrawButton(hdc, x, y, btnH, "Недавние", HitKind.BtnRecent, 0, busy, false) + gap;
-        x = DrawButton(hdc, x, y, btnH, "Лог", HitKind.BtnLogMenu, 0, busy, false) + gap;
-        x = DrawButton(hdc, x, y, btnH, "1251", HitKind.BtnOpen1251, 0, busy, false) + gap;
-        x = DrawButton(hdc, x, y, btnH, "Сохранить", HitKind.BtnSave, 0, busy || isLog, false) + gap;
-        DrawButton(hdc, x, y, btnH, "Сохранить как…", HitKind.BtnSaveAs, 0, busy || isLog, false);
+        int badgeSize = S(27);
+        int badgeY = (height - badgeSize) / 2;
+        PaintWorkspaceBadge(hdc, new Win32.RECT { Left = x, Top = badgeY, Right = x + badgeSize, Bottom = badgeY + badgeSize });
+        x += badgeSize + gap;
 
-        int rightX = width - padX;
-        int zoomInW = MeasureButtonWidth(hdc, "+");
-        int zoomOutW = MeasureButtonWidth(hdc, "−");
-        int wrapW = MeasureButtonWidth(hdc, "Перенос");
-        int jsonW = MeasureButtonWidth(hdc, "JSON");
-        int findW = MeasureButtonWidth(hdc, "Поиск");
-
-        DrawButtonFixed(hdc, rightX - zoomInW, y, zoomInW, btnH, "+", HitKind.BtnZoomIn, 0, isLog, false);
-        rightX -= zoomInW + gap;
-        DrawButtonFixed(hdc, rightX - zoomOutW, y, zoomOutW, btnH, "−", HitKind.BtnZoomOut, 0, isLog, false);
-        rightX -= zoomOutW + gap;
-        DrawButtonFixed(hdc, rightX - wrapW, y, wrapW, btnH, "Перенос", HitKind.BtnWrap, 0, false, _wrap);
-        rightX -= wrapW + gap;
-        DrawButtonFixed(hdc, rightX - jsonW, y, jsonW, btnH, "JSON", HitKind.BtnFormatJson, 0, busy || isLog, false);
-        rightX -= jsonW + gap;
-        DrawButtonFixed(hdc, rightX - findW, y, findW, btnH, "Поиск", HitKind.BtnFindText, 0, false, !isLog && _searchOpen);
-    }
-
-    private void PaintEditorSearch(nint hdc, int width, int top)
-    {
-        int pad = S(12);
-        int gap = S(4);
-        int btnH = S(26);
-        int qW = Math.Clamp(width / 3, S(160), S(340));
-        int x = pad + qW + S(8);
-        int y1 = top + S(8);
-        int y2 = top + S(42);
-        bool busy = _busy is not null || _searchInFlight;
-        bool replaceDisabled = busy || _searchAllTabs || (_documents.Count > 0 && ActiveDocument.Placeholder);
-
-        x = DrawButton(hdc, x, y1, btnH, "Назад", HitKind.SearchPrev, 0, busy, false) + gap;
-        x = DrawButton(hdc, x, y1, btnH, "Далее", HitKind.SearchNext, 0, busy, false) + gap;
-        x = DrawButton(hdc, x, y1, btnH, "Регулярка", HitKind.SearchRegex, 0, false, _searchRegex) + gap;
-        x = DrawButton(hdc, x, y1, btnH, "С учётом регистра", HitKind.SearchCase, 0, false, _searchCase) + gap;
-        x = DrawButton(hdc, x, y1, btnH, "Целое слово", HitKind.SearchWhole, 0, false, _searchWhole) + gap;
-        x = DrawButton(hdc, x, y1, btnH, "Все текстовые вкладки", HitKind.SearchAllTabs, 0, false, _searchAllTabs) + gap;
-        DrawButton(hdc, x, y1, btnH, "Закрыть", HitKind.SearchClose, 0, false, false);
-
-        int x2 = pad + qW + S(8);
-        x2 = DrawButton(hdc, x2, y2, btnH, "Заменить", HitKind.SearchReplaceOne, 0, replaceDisabled, false) + gap;
-        x2 = DrawButton(hdc, x2, y2, btnH, "Заменить всё", HitKind.SearchReplaceAll, 0, replaceDisabled, false) + S(10);
-
-        var stRect = new Win32.RECT { Left = x2, Top = y2, Right = Math.Max(x2, width - pad), Bottom = y2 + btnH };
-        Win32.SelectObject(hdc, _smallFont);
-        Win32.SetTextColor(hdc, ThemePalette.Muted);
-        Win32.DrawTextW(hdc, _searchStatus, -1, &stRect, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS | Win32.DT_NOPREFIX);
-    }
-
-    private void PaintLogToolbarAndSearch(nint hdc, int width, int top, LogViewerState log)
-    {
-        int pad = S(12);
-        int gap = S(4);
-        int btnH = S(26);
-        bool en = log.IsEnabled;
-        int row1Y = top + S(8);
-        int row2Y = top + S(42);
-        int row3Y = top + S(76);
-
-        int x = pad;
-        x = DrawButton(hdc, x, row1Y, btnH, "Начало", HitKind.LogStart, 0, !en, false) + gap;
-        x = DrawButton(hdc, x, row1Y, btnH, "Назад", HitKind.LogPrev, 0, !en || log.Bookmark.Offset <= log.Bookmark.Hidden, false) + gap;
-        x = DrawButton(hdc, x, row1Y, btnH, "Дальше", HitKind.LogNext, 0, !en || (log.Page?.Eof ?? true), false) + gap;
-        x = DrawButton(hdc, x, row1Y, btnH, "Конец", HitKind.LogEnd, 0, !en, false) + gap;
-        x += S(76) + gap;
-        x = DrawButton(hdc, x, row1Y, btnH, "Перейти, %", HitKind.LogJumpPercent, 0, !en, false) + gap;
-        DrawButton(hdc, x, row1Y, btnH, "Поиск в логе", HitKind.LogSearchOpen, 0, !en, log.SearchOpen);
-
-        int x2 = pad;
-        x2 = DrawButton(hdc, x2, row2Y, btnH, log.Bookmark.AutoRefresh ? "Автообновление: вкл." : "Автообновление: пауза", HitKind.LogAutoRefresh, 0, false, log.Bookmark.AutoRefresh) + gap;
-        x2 = DrawButton(hdc, x2, row2Y, btnH, log.Bookmark.FollowEnd ? "Следовать за концом: вкл." : "Следовать за концом: выкл.", HitKind.LogFollowEnd, 0, false, log.Bookmark.FollowEnd) + gap;
-        x2 = DrawButton(hdc, x2, row2Y, btnH, "Обновить", HitKind.LogRefreshNow, 0, log.IsWritingFile || log.PreparingTrim, false) + gap;
-        if (log.IndexProgress is not null || log.IndexPaused)
-        {
-            DrawButton(hdc, x2, row2Y, btnH, log.IndexPaused ? "Продолжить индекс" : "Отменить индекс", HitKind.LogIndexToggle, 0, false, false);
-        }
-
-        var lblRect = new Win32.RECT { Left = pad, Top = row3Y, Right = pad + S(70), Bottom = row3Y + btnH };
-        Win32.SelectObject(hdc, _smallFont);
-        Win32.SetTextColor(hdc, ThemePalette.Muted);
-        Win32.DrawTextW(hdc, "Начало, %", -1, &lblRect, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_NOPREFIX);
-
-        int x3 = pad + S(74) + S(63) + gap;
-        x3 = DrawButton(hdc, x3, row3Y, btnH, "Скрыть начало", HitKind.LogHideStart, 0, !en, false) + gap;
-        x3 = DrawButton(hdc, x3, row3Y, btnH, "Удалить начало…", HitKind.LogPhysicalTrim, 0, !en, false) + gap;
-        x3 = DrawButton(hdc, x3, row3Y, btnH, "Показать весь файл", HitKind.LogRevealAll, 0, !en || log.Bookmark.Hidden == 0, false) + gap;
-        DrawButton(hdc, x3, row3Y, btnH, "Отменить обрезку", HitKind.LogCancelTrim, 0, !log.PreparingTrim && !log.IsWritingFile, false);
-
-        if (log.SearchOpen)
-        {
-            int sTop = top + S(LogToolbarLogicalHeight);
-            DrawHLine(memDc: hdc, 0, sTop, width, ThemePalette.Border);
-            int qW = Math.Clamp(width / 3, S(160), S(320));
-            int sx = pad + qW + S(8);
-            int sy = sTop + S(8);
-            bool searching = log.SearchProgress is not null;
-
-            sx = DrawButton(hdc, sx, sy, btnH, "Найти", HitKind.LogFindNew, 0, !en || searching, false) + gap;
-            sx = DrawButton(hdc, sx, sy, btnH, "Ещё", HitKind.LogFindMore, 0, !en || searching || log.SearchComplete || log.SearchHits.Count == 0, false) + gap;
-            sx = DrawButton(hdc, sx, sy, btnH, "Отменить поиск", HitKind.LogFindCancel, 0, !searching || log.SearchStopping, false) + gap;
-            sx = DrawButton(hdc, sx, sy, btnH, "Закрыть поиск", HitKind.LogFindClose, 0, false, false) + gap;
-
-            int sx2 = pad;
-            int sy2 = sTop + S(38);
-            sx2 = DrawButton(hdc, sx2, sy2, btnH, "Регулярка", HitKind.LogFindRegex, 0, false, log.SearchRegex) + gap;
-            sx2 = DrawButton(hdc, sx2, sy2, btnH, "С учётом регистра", HitKind.LogFindCase, 0, false, log.SearchCase) + gap;
-            sx2 = DrawButton(hdc, sx2, sy2, btnH, "Целое слово", HitKind.LogFindWhole, 0, false, log.SearchWholeWord) + S(10);
-
-            var stRect = new Win32.RECT { Left = sx2, Top = sy2, Right = Math.Max(sx2, width - pad), Bottom = sy2 + btnH };
-            Win32.SelectObject(hdc, _smallFont);
-            Win32.SetTextColor(hdc, ThemePalette.Muted);
-            Win32.DrawTextW(hdc, log.SearchStatus, -1, &stRect, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS | Win32.DT_NOPREFIX);
-        }
+        x = DrawButton(hdc, x, y, btnH, "NetText", HitKind.Home, 0, false, _showHome, _smallWindowIcon) + gap;
+        x = DrawButton(hdc, x, y, btnH, "Файл ▾", HitKind.FileMenu, 0, false, false) + gap;
+        x = DrawButton(hdc, x, y, btnH, "Инструменты ▾", HitKind.ToolsMenu, 0, false, false) + gap;
+        x = DrawButton(hdc, x, y, btnH, "Тема ▾", HitKind.ThemeMenu, 0, false, false) + gap;
+        bool disabled = _showHome || !HasDocument;
+        DrawButton(hdc, x, y, btnH, "Поиск", HitKind.BtnFindText, 0, disabled, !disabled && (_searchOpen || ActiveDocument.Log?.SearchOpen == true));
+        PaintUpdateNotice(hdc, CaptionMenuRight(width), y, btnH);
+        PaintCaptionButtons(hdc, width, height);
     }
 
     private string TabLabel(Document doc)
     {
-        string prefix = doc.Dirty ? "●  " : "";
-        string? suffix = doc.Placeholder ? "откройте заново" : DiskStatus.TabSuffix(doc.DiskStatus);
-        return suffix is null ? $"{prefix}{doc.Name}" : $"{prefix}{doc.Name} ({suffix})";
+        string prefix = GetTabStatePrefix(doc);
+        string name = !string.IsNullOrWhiteSpace(doc.CustomTitle) ? doc.CustomTitle : doc.Name;
+        if (doc.CustomTitle is null && doc.File is { } file)
+        {
+            var others = _documents.Where(other => other != doc && other.File is not null &&
+                string.Equals(other.Name, doc.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (others.Length > 0)
+            {
+                string path = DisplayPath(file.Path);
+                string directory = Path.GetDirectoryName(path) ?? path;
+                string tail = Path.GetFileName(directory);
+                int index = directory.Length - tail.Length;
+                var otherDirectories = others.Select(other => Path.GetDirectoryName(DisplayPath(other.File!.Path)) ?? "").ToArray();
+                if (tail.Length == 0)
+                {
+                    tail = directory;
+                    index = 0;
+                }
+                while (index > 0 && otherDirectories.Any(other => other.Equals(tail, StringComparison.OrdinalIgnoreCase) ||
+                    (other.Length > tail.Length && other.EndsWith(tail, StringComparison.OrdinalIgnoreCase) &&
+                     other[other.Length - tail.Length - 1] == Path.DirectorySeparatorChar)))
+                {
+                    index = index > 1 ? directory.LastIndexOf(Path.DirectorySeparatorChar, index - 2) + 1 : 0;
+                    tail = directory[index..];
+                }
+                name += " · " + tail;
+            }
+        }
+        return prefix + name;
     }
 
     private void EnsureTabVisible(ulong id)
@@ -2373,11 +2797,12 @@ internal sealed unsafe class MainWindow
             int maxTabW = S(280);
             int closeW = S(24);
             int actionW = S(28);
-            int availWidth = Math.Max(1, rc.Width - padX * 2 - actionW * 2 - gap * 2);
+            int availWidth = Math.Max(1, rc.Width - padX * 2 - actionW * 4 - gap * 4);
 
             int x = 0;
             foreach (var doc in _documents)
             {
+                if (doc.Group != _activeGroup) continue;
                 int labelW = Math.Min(maxTabW, MeasureTextWidth(hdc, TabLabel(doc), _uiFont) + S(20));
                 int totalW = labelW + closeW;
                 if (doc.Id == id)
@@ -2400,26 +2825,44 @@ internal sealed unsafe class MainWindow
     {
         int padX = S(12);
         int gap = S(4);
-        int tabH = S(28);
+        int tabH = S(26);
         int y = top + (height - tabH) / 2;
-        int x = padX - _tabScrollX;
         int maxTabW = S(280);
         int closeW = S(24);
         int actionW = S(28);
-        int availRight = width - padX - actionW * 2 - gap * 2;
+        int availRight = Math.Max(padX + 1, width - padX - actionW * 4 - gap * 4);
+        int availWidth = availRight - padX;
 
+        var groupDocs = new List<Document>();
+        var widths = new List<int>();
+        int totalWidth = 0;
         for (int i = 0; i < _documents.Count; i++)
         {
             var doc = _documents[i];
+            if (doc.Group != _activeGroup) continue;
+            int labelW = Math.Min(maxTabW, MeasureTextWidth(hdc, TabLabel(doc), _uiFont) + S(20));
+            int totalW = labelW + closeW;
+            groupDocs.Add(doc);
+            widths.Add(totalW);
+            totalWidth += totalW + (groupDocs.Count > 1 ? gap : 0);
+        }
+
+        int maxScroll = Math.Max(0, totalWidth - availWidth);
+        _tabScrollX = Math.Clamp(_tabScrollX, 0, maxScroll);
+        int x = padX - _tabScrollX;
+
+        for (int i = 0; i < groupDocs.Count; i++)
+        {
+            var doc = groupDocs[i];
             bool active = doc.Id == _activeId;
             string label = TabLabel(doc);
-            int labelW = Math.Min(maxTabW, MeasureTextWidth(hdc, label, _uiFont) + S(20));
-            int totalW = labelW + closeW;
+            int totalW = widths[i];
+            int shiftedX = x + _tabDragOffsets.GetValueOrDefault(doc.Id);
 
-            if (x + totalW > padX && x < availRight)
+            if (shiftedX + totalW > padX && shiftedX < availRight)
             {
-                int drawLeft = Math.Max(padX, x);
-                int drawRight = Math.Min(availRight, x + totalW);
+                int drawLeft = Math.Max(padX, shiftedX);
+                int drawRight = Math.Min(availRight, shiftedX + totalW);
                 if (drawRight > drawLeft + closeW)
                 {
                     var box = new Win32.RECT { Left = drawLeft, Top = y, Right = drawRight, Bottom = y + tabH };
@@ -2436,7 +2879,7 @@ internal sealed unsafe class MainWindow
                     Win32.DrawTextW(hdc, label, -1, &selectRect, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS | Win32.DT_NOPREFIX);
                     _hits.Add(new HitRect(new Win32.RECT { Left = drawLeft, Top = y, Right = drawRight - closeW, Bottom = y + tabH }, HitKind.TabSelect, doc.Id));
 
-                    var closeRect = new Win32.RECT { Left = drawRight - closeW, Top = y + S(2), Right = drawRight - S(2), Bottom = y + tabH - S(2) };
+                    var closeRect = new Win32.RECT { Left = drawRight - closeW, Top = y, Right = drawRight, Bottom = y + tabH };
                     if (_hoverKind == HitKind.TabClose && _hoverTabId == doc.Id)
                     {
                         FillRoundRect(hdc, closeRect, S(4), ThemePalette.HoverBg, ThemePalette.HoverBg);
@@ -2449,29 +2892,73 @@ internal sealed unsafe class MainWindow
             x += totalW + gap;
         }
 
+        if (maxScroll > 0)
+        {
+            int barH = Math.Max(2, S(2));
+            var track = new Win32.RECT
+            {
+                Left = padX,
+                Top = top + height - barH,
+                Right = availRight,
+                Bottom = top + height,
+            };
+            nint trackBrush = Win32.CreateSolidBrush(ThemePalette.Dim);
+            Win32.FillRect(hdc, &track, trackBrush);
+            Win32.DeleteObject(trackBrush);
+
+            int thumbW = Math.Max(S(24), (int)MathF.Round(availWidth * ((float)availWidth / totalWidth)));
+            thumbW = Math.Min(availWidth, thumbW);
+            int thumbTravel = Math.Max(0, availWidth - thumbW);
+            int thumbLeft = padX + (int)MathF.Round(thumbTravel * ((float)_tabScrollX / maxScroll));
+            var thumb = new Win32.RECT
+            {
+                Left = thumbLeft,
+                Top = track.Top,
+                Right = Math.Min(availRight, thumbLeft + thumbW),
+                Bottom = track.Bottom,
+            };
+            nint thumbBrush = Win32.CreateSolidBrush(ThemePalette.Muted);
+            Win32.FillRect(hdc, &thumb, thumbBrush);
+            Win32.DeleteObject(thumbBrush);
+        }
+
         int newTabX = Math.Min(Math.Max(padX, x), availRight + gap);
         DrawButtonFixed(hdc, newTabX, y, actionW, tabH, "+", HitKind.BtnNewTab, 0, _busy is not null, false);
 
         int reopenX = newTabX + actionW + gap;
         bool reopenDisabled = _busy is not null || _closed.Count == 0;
         DrawButtonFixed(hdc, reopenX, y, actionW, tabH, "↶", HitKind.BtnReopen, 0, reopenDisabled, false);
+        bool splitDisabled = _busy is not null || _showHome || _documents.Count == 0;
+        DrawButtonFixed(hdc, reopenX + actionW + gap, y, actionW, tabH, "◫", HitKind.SplitVertical, 0, splitDisabled, false);
+        DrawButtonFixed(hdc, reopenX + (actionW + gap) * 2, y, actionW, tabH, "⊟", HitKind.SplitHorizontal, 0, splitDisabled, false);
     }
 
     private void PaintStatus(nint hdc, int width, int top, int height, int hitYOffset)
     {
-        if (_documents.Count == 0) return;
+        if (!HasDocument || _showHome)
+        {
+            var rect = new Win32.RECT { Left = S(16), Right = width - S(16), Top = top, Bottom = top + height };
+            Win32.SetTextColor(hdc, _error is null ? ThemePalette.Muted : ThemePalette.Error);
+            Win32.DrawTextW(hdc, _error ?? _busy ?? "", -1, &rect, Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS);
+            return;
+        }
         var doc = ActiveDocument;
-        int padX = S(16);
-        int gap = S(16);
+        int padX = S(12);
+        int gap = S(12);
         int rightX = width - padX;
 
         if (doc.Log is { } log)
         {
             string enc = TextFormat.EncodingLabelOf(log.Encoding);
-            string pos = log.Bookmark.Hidden > 0
-                ? $"Байты {log.Bookmark.Offset}–{log.PageEndOffset} из {log.Bookmark.Size} · скрыто {log.Bookmark.Hidden}"
-                : $"Байты {log.Bookmark.Offset}–{log.PageEndOffset} из {log.Bookmark.Size}";
-            int encW = MeasureTextWidth(hdc, enc, _smallFont);
+            var visible = doc.Viewport?.VisibleRange;
+            ulong first = visible?.Start ?? log.Bookmark.Offset;
+            ulong last = visible?.End ?? first;
+            string pos = log.PageLine is { } line && visible is { } range
+                ? $"Строки {line + (ulong)range.FirstRow:N0}–{line + (ulong)range.LastRow:N0}" +
+                  (log.Index.ScannedTo >= log.Bookmark.Size ? $" из {log.Index.LineCount:N0}" : "")
+                : $"Байты {first:N0}–{last:N0} из {log.Bookmark.Size:N0}";
+            if (log.Bookmark.Hidden > 0 && log.PageLine is null) pos += $" · скрыто {log.Bookmark.Hidden:N0}";
+            int encW = Math.Max(S(82), MeasureTextWidth(hdc, enc, _smallFont));
             int posW = MeasureTextWidth(hdc, pos, _smallFont);
 
             Win32.SelectObject(hdc, _smallFont);
@@ -2486,23 +2973,24 @@ internal sealed unsafe class MainWindow
             rightX -= posW + gap;
 
             var msgRect = new Win32.RECT { Left = padX, Top = top, Right = Math.Max(padX, rightX), Bottom = top + height };
-            Win32.DrawTextW(hdc, _error ?? log.LeftStatusText(), -1, &msgRect, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS | Win32.DT_NOPREFIX);
+            Win32.DrawTextW(hdc, _error ?? doc.RecoveryStatus ?? log.LeftStatusText(), -1, &msgRect, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS | Win32.DT_NOPREFIX);
             return;
         }
 
         string? diskNotice = DiskStatus.Notice(doc.DiskStatus);
-        string message = _error
-            ?? _busy
-            ?? diskNotice
-            ?? (doc.File is not null ? DisplayPath(doc.File.Path) : "Новый документ");
+        string? notice = _error ?? _busy ?? doc.RecoveryStatus ?? doc.JsonError ?? diskNotice;
+        string message = notice ?? (doc.File is not null ? DisplayPath(doc.File.Path) : "Новый документ");
 
         string eolLabel = doc.Format.LineEndingsLabel;
         string encLabel = doc.Format.EncodingLabel;
-        string posLabel = $"Стр. {doc.CursorLine + 1}, стлб. {doc.CursorColumn + 1}";
+        int lineNum = doc.CursorLine + 1;
+        int colNum = doc.CursorColumn + 1;
+        string posLabel = $"Строка {LineNumbers.Format(lineNum)} · Выделено {LineNumbers.Format(doc.LastSelectedChars)} симв. · Стлб. {LineNumbers.Format(colNum)}" +
+            (doc.LastCaretCount > 1 ? $" · Курсоры: {LineNumbers.Format(doc.LastCaretCount)}" : "");
 
-        int eolW2 = MeasureTextWidth(hdc, eolLabel, _smallFont);
-        int encW2 = MeasureTextWidth(hdc, encLabel, _smallFont);
-        int posW2 = MeasureTextWidth(hdc, posLabel, _smallFont) + S(12);
+        int eolW2 = Math.Max(S(36), MeasureTextWidth(hdc, eolLabel, _smallFont));
+        int encW2 = Math.Max(S(82), MeasureTextWidth(hdc, encLabel, _smallFont));
+        int posW2 = Math.Max(S(144), MeasureTextWidth(hdc, posLabel, _smallFont) + S(12));
 
         Win32.SelectObject(hdc, _smallFont);
         Win32.SetTextColor(hdc, ThemePalette.Muted);
@@ -2512,7 +3000,7 @@ internal sealed unsafe class MainWindow
         rightX -= eolW2 + gap;
 
         var encRect2 = new Win32.RECT { Left = rightX - encW2, Top = top, Right = rightX, Bottom = top + height };
-        Win32.DrawTextW(hdc, encLabel, -1, &encRect2, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_NOPREFIX);
+        Win32.DrawTextW(hdc, encLabel, -1, &encRect2, Win32.DT_RIGHT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_NOPREFIX);
         rightX -= encW2 + gap;
 
         var goRect = new Win32.RECT { Left = rightX - posW2, Top = top + S(3), Right = rightX, Bottom = top + height - S(3) };
@@ -2526,10 +3014,22 @@ internal sealed unsafe class MainWindow
             new Win32.RECT { Left = goRect.Left, Top = goRect.Top + hitYOffset, Right = goRect.Right, Bottom = goRect.Bottom + hitYOffset },
             HitKind.BtnGoToLine));
         rightX -= posW2 + gap;
+        string saveState = doc.Dirty ? "Изменён" : doc.File is null ? "Без файла" : "Сохранён";
+        int saveWidth = Math.Max(S(76), MeasureTextWidth(hdc, saveState, _smallFont));
+        var saveRect = new Win32.RECT { Left = rightX - saveWidth, Right = rightX, Top = top, Bottom = top + height };
+        Win32.DrawTextW(hdc, saveState, -1, &saveRect, Win32.DT_RIGHT | Win32.DT_VCENTER | Win32.DT_SINGLELINE);
+        rightX -= saveWidth + gap;
 
         var msgRect2 = new Win32.RECT { Left = padX, Top = top, Right = Math.Max(padX, rightX), Bottom = top + height };
-        Win32.SetTextColor(hdc, _error is not null ? ThemePalette.Error : ThemePalette.Muted);
-        Win32.DrawTextW(hdc, message, -1, &msgRect2, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_END_ELLIPSIS | Win32.DT_NOPREFIX);
+        Win32.SetTextColor(hdc, _error is not null || doc.JsonError is not null ? ThemePalette.Error : ThemePalette.Muted);
+        uint ellipsis = notice is null && doc.File is not null ? Win32.DT_PATH_ELLIPSIS : Win32.DT_END_ELLIPSIS;
+        Win32.DrawTextW(hdc, message, -1, &msgRect2, Win32.DT_LEFT | Win32.DT_VCENTER | Win32.DT_SINGLELINE | ellipsis | Win32.DT_NOPREFIX);
+        if (doc.JsonError is not null && _error is null && _busy is null)
+        {
+            msgRect2.Top += hitYOffset;
+            msgRect2.Bottom += hitYOffset;
+            _hits.Add(new HitRect(msgRect2, HitKind.JsonError));
+        }
     }
 
     private int MeasureButtonWidth(nint hdc, string text) => MeasureTextWidth(hdc, text, _uiFont) + S(20);
@@ -2542,14 +3042,14 @@ internal sealed unsafe class MainWindow
         return sz.cx;
     }
 
-    private int DrawButton(nint hdc, int x, int y, int h, string text, HitKind kind, ulong tabId, bool disabled, bool selected)
+    private int DrawButton(nint hdc, int x, int y, int h, string text, HitKind kind, ulong tabId, bool disabled, bool selected, nint icon = 0)
     {
-        int w = MeasureButtonWidth(hdc, text);
-        DrawButtonFixed(hdc, x, y, w, h, text, kind, tabId, disabled, selected);
+        int w = MeasureButtonWidth(hdc, text) + (icon == 0 ? 0 : S(22));
+        DrawButtonFixed(hdc, x, y, w, h, text, kind, tabId, disabled, selected, icon);
         return x + w;
     }
 
-    private void DrawButtonFixed(nint hdc, int x, int y, int w, int h, string text, HitKind kind, ulong tabId, bool disabled, bool selected)
+    private void DrawButtonFixed(nint hdc, int x, int y, int w, int h, string text, HitKind kind, ulong tabId, bool disabled, bool selected, nint icon = 0)
     {
         var rect = new Win32.RECT { Left = x, Top = y, Right = x + w, Bottom = y + h };
         bool hover = !disabled && _hoverKind == kind && _hoverTabId == tabId;
@@ -2564,7 +3064,14 @@ internal sealed unsafe class MainWindow
 
         Win32.SelectObject(hdc, _uiFont);
         Win32.SetTextColor(hdc, disabled ? ThemePalette.Dim : ThemePalette.Text);
-        Win32.DrawTextW(hdc, text, -1, &rect, Win32.DT_CENTER | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_NOPREFIX);
+        var label = rect;
+        if (icon != 0)
+        {
+            int size = S(SmallIconLogicalSize);
+            Win32.DrawIconEx(hdc, x + S(10), y + (h - size) / 2, icon, size, size, 0, 0, Win32.DI_NORMAL);
+            label.Left += S(22);
+        }
+        Win32.DrawTextW(hdc, text, -1, &label, Win32.DT_CENTER | Win32.DT_VCENTER | Win32.DT_SINGLELINE | Win32.DT_NOPREFIX);
         _hits.Add(new HitRect(rect, kind, tabId));
     }
 
@@ -2606,6 +3113,12 @@ internal sealed unsafe class MainWindow
 
     private void OnMouseMove(int x, int y)
     {
+        if (DragDivider(x, y)) return;
+        if (_scrollDrag is not null)
+        {
+            DragDocumentScroll(x, y);
+            return;
+        }
         if (!_trackingMouse)
         {
             var tme = new Win32.TRACKMOUSEEVENT
@@ -2618,18 +3131,12 @@ internal sealed unsafe class MainWindow
             _trackingMouse = true;
         }
 
-        if (_dragTabId != 0 && Math.Abs(x - _dragStartX) > S(4))
+        if (UpdateTabDrag(x, y))
         {
-            _draggingTab = true;
-        }
-
-        var hit = HitTest(x, y);
-        if (_draggingTab && hit is { Kind: HitKind.TabSelect } targetHit && targetHit.TabId != _dragTabId)
-        {
-            ReorderTabs(_dragTabId, targetHit.TabId);
             return;
         }
 
+        var hit = HitTest(x, y);
         HitKind nextKind = hit?.Kind ?? HitKind.None;
         ulong nextTabId = hit?.TabId ?? 0;
         if (nextKind != _hoverKind || nextTabId != _hoverTabId)
@@ -2645,20 +3152,63 @@ internal sealed unsafe class MainWindow
         var hit = HitTest(x, y);
         if (hit is null) return;
 
-        if (hit.Value.Kind == HitKind.TabSelect)
+        if (hit.Value.Kind is HitKind.ScrollMap or HitKind.HorizontalScroll or HitKind.VerticalScroll)
         {
-            _dragTabId = hit.Value.TabId;
-            _dragStartX = x;
-            _draggingTab = false;
+            BeginScroll(hit.Value, x, y);
+            return;
+        }
+
+        if (hit.Value.Kind == HitKind.GroupDivider)
+        {
+            var divider = _dividers[(int)hit.Value.TabId];
+            _dragDivider = (divider.Pane, divider.Bounds);
             Win32.SetCapture(_hwnd);
+            return;
+        }
+
+        if (hit.Value.Kind is HitKind.TabSelect or HitKind.GroupTab)
+        {
+            BeginTabDrag(hit.Value.TabId, x, y);
             SelectTab(hit.Value.TabId);
             return;
         }
 
-        var log = _documents.Count > 0 ? ActiveDocument.Log : null;
+        var log = HasDocument ? ActiveDocument.Log : null;
 
         switch (hit.Value.Kind)
         {
+            case HitKind.WorkspaceBadge: ShowWorkspaceMenu(hit.Value.Rect); break;
+            case HitKind.ThemeMenu: ShowThemeMenu(hit.Value.Rect); break;
+            case HitKind.OpenUpdateDialog: ShowUpdateDialog(); break;
+            case HitKind.DeferredLoadTab:
+                if (_documents.Find(d => d.Id == hit.Value.TabId) is { } deferredDoc)
+                {
+                    RestoreDeferredOrIdleTab(deferredDoc);
+                }
+                break;
+            case HitKind.HomeSectionToggle:
+            case HitKind.HomeRowOpen:
+            case HitKind.HomeRowDelete:
+            case HitKind.HomeSectionPrev:
+            case HitKind.HomeSectionNext:
+                HandleHomeHit(hit.Value);
+                break;
+            case HitKind.EmptyGroup: FocusEmptyGroup((int)hit.Value.TabId); break;
+            case HitKind.NewInGroup:
+                FocusEmptyGroup((int)hit.Value.TabId);
+                NewFile();
+                break;
+            case HitKind.CloseEmptyGroup: CloseEmptyGroup((int)hit.Value.TabId); break;
+            case HitKind.ApplyUpdate: RestartForUpdate(); break;
+            case HitKind.DismissUpdate: DismissUpdate(); break;
+            case HitKind.Home: ToggleHome(); break;
+            case HitKind.HomeNext: _historyPage++; UpdateHistory(); break;
+            case HitKind.HomePrevious: _historyPage--; UpdateHistory(); break;
+            case HitKind.FileMenu: ShowFileMenu(hit.Value.Rect); break;
+            case HitKind.ToolsMenu: ShowToolsMenu(hit.Value.Rect); break;
+            case HitKind.JsonError: OpenJsonError(); break;
+            case HitKind.SplitVertical: SplitGroup(true); break;
+            case HitKind.SplitHorizontal: SplitGroup(false); break;
             case HitKind.BtnNew: NewFile(); break;
             case HitKind.BtnOpen: OpenPicker(false, false); break;
             case HitKind.BtnRecent: ShowRecentMenu(hit.Value.Rect); break;
@@ -2667,10 +3217,10 @@ internal sealed unsafe class MainWindow
             case HitKind.BtnSave: Save(false); break;
             case HitKind.BtnSaveAs: Save(true); break;
             case HitKind.BtnFindText: OpenSearch(false); break;
-            case HitKind.BtnFormatJson: FormatJson(); break;
+            case HitKind.BtnFormatJson: FormatActiveDocumentJson(); break;
             case HitKind.BtnWrap: ToggleWrap(); break;
-            case HitKind.BtnZoomOut: Zoom(-1.0f); break;
-            case HitKind.BtnZoomIn: Zoom(1.0f); break;
+            case HitKind.BtnZoomOut: Zoom(-1.0f); InvalidateChrome(); break;
+            case HitKind.BtnZoomIn: Zoom(1.0f); InvalidateChrome(); break;
             case HitKind.TabClose: CloseTab(hit.Value.TabId); break;
             case HitKind.BtnNewTab: NewFile(); break;
             case HitKind.BtnReopen: Reopen(); break;
@@ -2678,6 +3228,16 @@ internal sealed unsafe class MainWindow
 
             case HitKind.SearchPrev: RunEditorSearch(SearchCommand.Previous); break;
             case HitKind.SearchNext: RunEditorSearch(SearchCommand.Next); break;
+            case HitKind.SearchRun: RunExplicitSearch(); break;
+            case HitKind.SearchFindAll: FindAllToMultiCarets(); break;
+            case HitKind.SearchList: ToggleSearchList(); break;
+            case HitKind.SearchToggleReplace:
+                _replaceOpen = !_replaceOpen;
+                LayoutAndSyncControls();
+                if (_replaceOpen) Win32.SetFocus(_searchReplaceEdit);
+                InvalidateChrome();
+                break;
+            case HitKind.SearchHighlight: ToggleHighlightCurrentOnly(); break;
             case HitKind.SearchRegex: _searchRegex = !_searchRegex; ResetEditorSearch(); break;
             case HitKind.SearchCase: _searchCase = !_searchCase; ResetEditorSearch(); break;
             case HitKind.SearchWhole: _searchWhole = !_searchWhole; ResetEditorSearch(); break;
@@ -2691,6 +3251,31 @@ internal sealed unsafe class MainWindow
             case HitKind.LogNext: log?.Navigate(LogDestination.Next); break;
             case HitKind.LogEnd: log?.Navigate(LogDestination.End); break;
             case HitKind.LogJumpPercent: log?.JumpPercent(); break;
+            case HitKind.LogJump50:
+                if (log is not null)
+                {
+                    log.JumpPercentInput = "50";
+                    log.JumpPercent();
+                }
+                break;
+            case HitKind.LogLevelsButton: ToggleLogLevelsPanel(); break;
+            case HitKind.LogActionsMenu:
+                if (HasDocument) ShowLogActionsMenu(ActiveDocument, hit.Value.Rect);
+                break;
+            case HitKind.LogEditPage:
+                if (HasDocument) EnterLogPageEdit(ActiveDocument);
+                break;
+            case HitKind.LogSavePage:
+                if (HasDocument) SaveLogPageEdit(ActiveDocument);
+                break;
+            case HitKind.LogCancelPage:
+                if (HasDocument) CancelLogPageEdit(ActiveDocument);
+                break;
+            case HitKind.LogFilterToggle:
+            case HitKind.LogFilterAll:
+            case HitKind.LogFilterClose:
+                HandleLogFilterHit(hit.Value);
+                break;
             case HitKind.LogSearchOpen:
                 if (log is not null)
                 {
@@ -2704,11 +3289,12 @@ internal sealed unsafe class MainWindow
             case HitKind.LogFollowEnd: log?.ToggleFollowEnd(); break;
             case HitKind.LogRefreshNow: log?.Navigate(LogDestination.AtOffset(log.Bookmark.Offset)); break;
             case HitKind.LogIndexToggle: log?.ToggleIndex(); break;
-            case HitKind.LogHideStart: log?.StartHideStart(); break;
-            case HitKind.LogPhysicalTrim: log?.StartPhysicalTrim(); break;
+            case HitKind.LogHideStart: if (log is not null) ShowLogTrim(log, false); break;
+            case HitKind.LogPhysicalTrim: if (log is not null) ShowLogTrim(log, true); break;
             case HitKind.LogRevealAll: log?.RevealAll(); break;
             case HitKind.LogCancelTrim: log?.CancelTrim(); break;
             case HitKind.LogFindNew: log?.StartSearch(false); break;
+            case HitKind.LogTime: log?.SeekTime(); break;
             case HitKind.LogFindMore: log?.StartSearch(true); break;
             case HitKind.LogFindCancel: log?.CancelSearch(); break;
             case HitKind.LogFindClose:
@@ -2732,14 +3318,14 @@ internal sealed unsafe class MainWindow
         }
     }
 
-    private void OnLeftButtonUp()
+    private void OnLeftButtonUp(int x, int y)
     {
-        if (_dragTabId != 0)
+        if (_dragDivider is not null)
         {
-            _dragTabId = 0;
-            _draggingTab = false;
+            _dragDivider = null;
             Win32.ReleaseCapture();
         }
+        FinishTabDrag(x, y);
     }
 
     private void OnCommand(nuint wParam)
@@ -2748,6 +3334,22 @@ internal sealed unsafe class MainWindow
         int id = (int)((ulong)wParam & 0xFFFF);
         int code = (int)(((ulong)wParam >> 16) & 0xFFFF);
 
+        if (id == IdHistoryQuery && code == Win32.EN_CHANGE)
+        {
+            HomeSearchChanged();
+            return;
+        }
+        if (id == IdHistoryList && code == 2)
+        {
+            OpenHistorySelection();
+            return;
+        }
+        if (id == IdTextSearchList && code == Win32.LBN_SELCHANGE)
+        {
+            ChooseTextSearchResult();
+            return;
+        }
+
         if (code == Win32.EN_CHANGE)
         {
             switch (id)
@@ -2755,21 +3357,22 @@ internal sealed unsafe class MainWindow
                 case IdSearchQueryEdit:
                     _searchQuery = ReadControlText(_searchQueryEdit);
                     ResetEditorSearch();
+                    ScheduleAutoSearch();
                     break;
                 case IdSearchReplaceEdit:
                     _searchReplacement = ReadControlText(_searchReplaceEdit);
                     ResetEditorSearch();
                     break;
                 case IdLogJumpEdit:
-                    if (_documents.Count > 0 && ActiveDocument.Log is { } jLog)
+                    if (HasDocument && ActiveDocument.Log is { } jLog)
                         jLog.JumpPercentInput = ReadControlText(_logJumpEdit);
                     break;
                 case IdLogTrimEdit:
-                    if (_documents.Count > 0 && ActiveDocument.Log is { } tLog)
+                    if (HasDocument && ActiveDocument.Log is { } tLog)
                         tLog.TrimPercentInput = ReadControlText(_logTrimEdit);
                     break;
                 case IdLogSearchEdit:
-                    if (_documents.Count > 0 && ActiveDocument.Log is { } sLog)
+                    if (HasDocument && ActiveDocument.Log is { } sLog)
                     {
                         sLog.SearchPattern = ReadControlText(_logSearchEdit);
                         sLog.ResetSearch();
@@ -2780,7 +3383,7 @@ internal sealed unsafe class MainWindow
         }
         else if (id == IdLogSearchList && code == Win32.LBN_SELCHANGE)
         {
-            if (_documents.Count > 0 && ActiveDocument.Log is { } log)
+            if (HasDocument && ActiveDocument.Log is { } log)
             {
                 int sel = (int)Win32.SendMessageW(_logSearchList, Win32.LB_GETCURSEL, 0, 0);
                 if (sel >= 0 && sel < log.SearchHits.Count)
@@ -2817,34 +3420,79 @@ internal sealed unsafe class MainWindow
     private void OnNotify(nint lParam)
     {
         var nm = (Win32.NMHDR*)lParam;
+        if (_pageEditors.FirstOrDefault(kv => kv.Value == nm->hwndFrom) is { Key: > 0 } pageEntry)
+        {
+            var pageDoc = _documents.Find(d => d.Id == pageEntry.Key);
+            if (pageDoc is not null)
+            {
+                if (nm->code == ScintillaInterop.SCN_MODIFIED)
+                {
+                    pageDoc.Log?.UpdatePendingPageEdit(ScintillaInterop.GetTextString(pageEntry.Value));
+                    InvalidateChrome();
+                }
+                else if (nm->code == ScintillaInterop.SCN_FOCUSIN && !_showHome && pageDoc.Id != _activeId)
+                {
+                    SelectTab(pageDoc.Id);
+                }
+            }
+            return;
+        }
+
         var doc = _documents.Find(d => d.EditorHwnd == nm->hwndFrom);
         if (doc is null || doc.Log is not null) return;
 
         switch (nm->code)
         {
-            case ScintillaInterop.SCN_SAVEPOINTREACHED:
+            case ScintillaInterop.SCN_MODIFIED:
                 doc.Revision++;
+                RefreshJsonIndicator(doc);
+                doc.LastWorked = DateTimeOffset.UtcNow;
+                doc.DraftBytes = null;
+                doc.UntitledNamePending = doc.File is null;
+                doc.JsonDue = Environment.TickCount64 + 300;
+                doc.MeasuredLines = null;
+                doc.MeasuredWidth = 0;
+                InvalidateMinimap(doc.Id);
+                UpdateEditorLinksAndLineNumbers(doc);
+                if (doc.ActiveLogFilter != LogLevel.All) SyncEditorLogFilter(doc);
+                PropagateSharedDocumentChange(doc);
+                break;
+
+            case ScintillaInterop.SCN_FOCUSIN:
+                if (!_showHome && doc.Id != _activeId) SelectTab(doc.Id);
+                break;
+
+            case ScintillaInterop.SCN_SAVEPOINTREACHED:
                 if (doc.Dirty)
                 {
                     doc.Dirty = false;
+                    PropagateSharedDocumentChange(doc);
                     InvalidateChrome();
                 }
                 break;
 
             case ScintillaInterop.SCN_SAVEPOINTLEFT:
-                doc.Revision++;
                 if (!doc.Dirty)
                 {
                     doc.Dirty = true;
+                    PropagateSharedDocumentChange(doc);
                     InvalidateChrome();
                 }
                 break;
 
             case ScintillaInterop.SCN_UPDATEUI:
-                if (doc.Id == _activeId) UpdateActiveCursor();
+                SyncDocumentScroll(doc);
+                UpdateEditorLinksAndLineNumbers(doc);
+                if (doc.Id == _activeId)
+                {
+                    UpdateActiveCursor();
+                    UpdateEditorIndicators(doc);
+                }
                 break;
 
             case ScintillaInterop.SCN_PAINTED:
+                MeasureEditorWidth(doc);
+                SyncDocumentScroll(doc);
                 if (doc.PendingEditorReady)
                 {
                     doc.PendingEditorReady = false;
@@ -2875,6 +3523,11 @@ internal sealed unsafe class MainWindow
         switch (_e2eStage)
         {
             case 1:
+                if (_e2eFirstPainted && !log.Reading && log.Page is not null && log.NeedsIndexOptIn && log.IndexProgress is null)
+                {
+                    log.StartFullIndexOptIn();
+                    return;
+                }
                 if (!_e2eFirstPainted || log.Reading || log.Page is null || log.Observation is null ||
                     log.Index.ScannedTo < log.Bookmark.Size || log.IndexProgress is not null)
                 {
@@ -2962,14 +3615,45 @@ internal sealed unsafe class MainWindow
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static nint MainWndProc(nint hwnd, uint msg, nuint wParam, nint lParam)
     {
-        var app = _instance;
+        var app = WorkspaceSession.Current.FindWindow(hwnd) ?? _creatingWindow;
         if (app is null) return Win32.DefWindowProcW(hwnd, msg, wParam, lParam);
-
+        nint dwmResult;
         switch (msg)
         {
+            case Win32.WM_NCCALCSIZE:
+                return CalculateCaptionFrame(hwnd, msg, wParam, lParam);
+
+            case Win32.WM_NCHITTEST:
+                return app.CaptionHitTest(hwnd, msg, wParam, lParam);
+
+            case Win32.WM_NCMOUSEMOVE:
+                app.TrackCaptionButton((int)wParam);
+                if (Win32.DwmDefWindowProc(hwnd, msg, wParam, lParam, &dwmResult)) return dwmResult;
+                break;
+
+            case Win32.WM_NCMOUSELEAVE:
+                app.TrackCaptionButton(0);
+                if (Win32.DwmDefWindowProc(hwnd, msg, wParam, lParam, &dwmResult)) return dwmResult;
+                break;
+
+            case Win32.WM_NCLBUTTONDOWN:
+            case Win32.WM_NCLBUTTONDBLCLK:
+                if (app.BeginCaptionButton((int)wParam)) return 0;
+                break;
+
+            case WM_ACTIVATE:
+                app.SyncActiveWindowTheme(wParam);
+                break;
+
+            case WM_MOVE:
+                app.TrackNormalWindowBounds();
+                return 0;
+
             case Win32.WM_SIZE:
+                app.TrackNormalWindowBounds();
                 app.LayoutAndSyncControls();
                 app.InvalidateChrome();
+                app.InvalidateScrollbars();
                 return 0;
 
             case Win32.WM_ERASEBKGND:
@@ -2993,9 +3677,17 @@ internal sealed unsafe class MainWindow
             case Win32.WM_DPICHANGED:
                 app._dpi = (uint)((ulong)wParam & 0xFFFF);
                 app.RebuildFonts();
+                app.UpdateWindowIcons();
                 foreach (var d in app._documents) d.Viewport?.SetDpi((int)app._dpi);
                 var suggested = (Win32.RECT*)lParam;
                 Win32.MoveWindow(hwnd, suggested->Left, suggested->Top, suggested->Width, suggested->Height, true);
+                foreach (var doc in app._documents)
+                    if (doc.Log is null)
+                    {
+                        doc.MeasuredLines = null;
+                        doc.MeasuredWidth = 0;
+                        ScintillaInterop.ApplyLanguage(doc.EditorHwnd, doc.File?.Path, (int)MathF.Round(app._fontSize));
+                    }
                 app.LayoutAndSyncControls();
                 app.InvalidateChrome();
                 return 0;
@@ -3005,8 +3697,13 @@ internal sealed unsafe class MainWindow
                 return 0;
 
             case Win32.WM_MOUSEMOVE:
-                app.OnMouseMove(Win32.GetXParam(lParam), Win32.GetYParam(lParam));
+            {
+                int x = Win32.GetXParam(lParam);
+                int y = Win32.GetYParam(lParam);
+                if (app._captionPressed == 0) app.OnMouseMove(x, y);
+                else app.TrackCaptionButton(app.CaptionButtonAt(x, y), trackLeave: false);
                 return 0;
+            }
 
             case Win32.WM_MOUSELEAVE:
                 app._trackingMouse = false;
@@ -3023,13 +3720,50 @@ internal sealed unsafe class MainWindow
                 return 0;
 
             case Win32.WM_LBUTTONUP:
-                app.OnLeftButtonUp();
+                if (app.ReleaseCaptionButton(Win32.GetXParam(lParam), Win32.GetYParam(lParam))) return 0;
+                if (app._scrollDrag is not null)
+                {
+                    app.DragDocumentScroll(Win32.GetXParam(lParam), Win32.GetYParam(lParam));
+                    app._scrollDrag = null;
+                    Win32.ReleaseCapture();
+                    return 0;
+                }
+                app.OnLeftButtonUp(Win32.GetXParam(lParam), Win32.GetYParam(lParam));
+                return 0;
+
+            case Win32.WM_CAPTURECHANGED:
+                if (app._captionPressed != 0)
+                {
+                    app._captionPressed = 0;
+                    app.TrackCaptionButton(0);
+                }
+                app._scrollDrag = null;
+                app._dragDivider = null;
+                app.CancelTabDrag();
+                return 0;
+
+            case Win32.WM_RBUTTONUP:
+                app.ShowTabMenu(Win32.GetXParam(lParam), Win32.GetYParam(lParam));
                 return 0;
 
             case Win32.WM_LBUTTONDBLCLK:
             {
                 int x = Win32.GetXParam(lParam);
                 int y = Win32.GetYParam(lParam);
+                if (app.HandleGroupHeaderDoubleClick(x, y))
+                {
+                    return 0;
+                }
+                if (app.HitTest(x, y) is { Kind: HitKind.TabSelect } tab)
+                {
+                    app.CancelTabDrag();
+                    if (app._justDraggedTabId != tab.TabId)
+                    {
+                        app.CloseTab(tab.TabId);
+                    }
+                    app._justDraggedTabId = 0;
+                    return 0;
+                }
                 int top = app.S(ToolbarLogicalHeight);
                 int bottom = top + app.S(TabBarLogicalHeight);
                 if (y >= top && y < bottom && app.HitTest(x, y) is null)
@@ -3053,6 +3787,38 @@ internal sealed unsafe class MainWindow
                     app.InvalidateChrome();
                     return 0;
                 }
+                if (app.HandleGroupHeaderWheel(pt.X, pt.Y, delta, horizontal: false))
+                {
+                    return 0;
+                }
+                if (!app._forwardingWheel && app.HitTest(pt.X, pt.Y) is { Kind: HitKind.ScrollMap or HitKind.HorizontalScroll or HitKind.VerticalScroll } hit
+                    && app._documents.Find(doc => doc.Id == hit.TabId) is { } doc)
+                {
+                    app._forwardingWheel = true;
+                    Win32.SendMessageW(doc.EditorHwnd, msg, wParam, lParam);
+                    app._forwardingWheel = false;
+                    return 0;
+                }
+                break;
+            }
+
+            case Win32.WM_MOUSEHWHEEL:
+            {
+                var pt = new Win32.POINT { X = Win32.GetXParam(lParam), Y = Win32.GetYParam(lParam) };
+                Win32.ScreenToClient(hwnd, &pt);
+                int delta = Win32.GetWheelDelta(wParam);
+                int top = app.S(ToolbarLogicalHeight);
+                int bottom = top + app.S(TabBarLogicalHeight);
+                if (pt.Y >= top && pt.Y <= bottom)
+                {
+                    app._tabScrollX = Math.Max(0, app._tabScrollX + delta / 3);
+                    app.InvalidateChrome();
+                    return 0;
+                }
+                if (app.HandleGroupHeaderWheel(pt.X, pt.Y, delta, horizontal: true))
+                {
+                    return 0;
+                }
                 break;
             }
 
@@ -3073,6 +3839,7 @@ internal sealed unsafe class MainWindow
             case Win32.WM_TIMER:
                 if (wParam == FastTimerId) app.OnFastTimer();
                 else if (wParam == SlowTimerId) app.OnSlowTimer();
+                else if (wParam == SearchDebounceTimerId) app.OnSearchDebounceTimer();
                 return 0;
 
             case Win32.WM_DROPFILES:
@@ -3087,8 +3854,14 @@ internal sealed unsafe class MainWindow
                 app.DrainUiQueue();
                 return 0;
 
+            case Win32.WM_APP_SCROLL_LAYOUT:
+                app._scrollLayoutQueued = false;
+                app.LayoutAndSyncControls();
+                app.InvalidateScrollbars();
+                return 0;
+
             case Win32.WM_APP_IPC:
-                app.ProcessIncomingIpc();
+                WorkspaceSession.Current.RouteIncomingIpc(WorkspaceSession.Current.SingleInstance ?? app._singleInstance);
                 return 0;
 
             case Win32.WM_ACTIVATEAPP:
@@ -3099,18 +3872,43 @@ internal sealed unsafe class MainWindow
                 return 0;
 
             case Win32.WM_CLOSE:
+                foreach (var doc in app._documents.ToArray())
+                {
+                    if (!app.ConfirmLeaveDirtyPageEdit(doc)) return 0;
+                }
                 if (!app.BeginSessionShutdown()) return 0;
-                Win32.DestroyWindow(hwnd);
+                app.FinishClosing();
                 return 0;
 
+            case Win32.WM_NCDESTROY:
+            {
+                nint result = Win32.DefWindowProcW(hwnd, msg, wParam, lParam);
+                app.ReleaseWindowIcons();
+                return result;
+            }
+
             case Win32.WM_DESTROY:
+                app._closingWindow = true;
+                app._activeId = 0;
+                app.CancelTabDrag();
+                app.DisposeUpdate();
                 Win32.KillTimer(hwnd, FastTimerId);
                 Win32.KillTimer(hwnd, SlowTimerId);
-                foreach (var d in app._documents) d.Log?.Dispose();
+                app.CancelAutoSearch();
+                foreach (var d in app._documents.ToArray())
+                {
+                    app.DisposeDocumentResources(d);
+                }
+                app._documents.Clear();
                 app._topChromeBuffer.Dispose();
                 app._statusBuffer.Dispose();
-                app._sessionJournal?.Dispose();
-                Win32.PostQuitMessage(0);
+                var journal = app._sessionJournal;
+                app._sessionJournal = null;
+                WorkspaceSession.Current.ReleaseJournalIfUnused(journal);
+                if (WorkspaceSession.Current.UnregisterWindow(app))
+                {
+                    Win32.PostQuitMessage(0);
+                }
                 return 0;
         }
 

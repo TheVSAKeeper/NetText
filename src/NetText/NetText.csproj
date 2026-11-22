@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <Version>2.3.0</Version>
     <TargetFramework>net11.0-windows</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PlatformTarget>x64</PlatformTarget>
@@ -15,6 +16,17 @@
     <EnableAotAnalyzer>true</EnableAotAnalyzer>
     <InvariantGlobalization>false</InvariantGlobalization>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>NetText.ico</ApplicationIcon>
+    <NetTextSingleExecutable Condition="'$(NetTextSingleExecutable)' == '' and '$(_IsPublishing)' == 'true'">true</NetTextSingleExecutable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(NetTextSingleExecutable)' == 'true'">
+    <DefineConstants>$(DefineConstants);NETTEXT_STATIC_EDITOR</DefineConstants>
+    <DebugType>none</DebugType>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\..\publish\</PublishDir>
+    <NativeEditorDirectory>$(MSBuildThisFileDirectory)..\..\native\obj\static-editor</NativeEditorDirectory>
+    <NativeEditorBuild>$(MSBuildThisFileDirectory)..\..\tools\Build-NativeEditor.ps1</NativeEditorBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,10 +34,25 @@
     <InternalsVisibleTo Include="CoreBench" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(NetTextSingleExecutable)' != 'true'">
     <None Include="..\..\native\win-x64\Scintilla.dll" CopyToOutputDirectory="PreserveNewest" Link="Scintilla.dll" />
     <None Include="..\..\native\win-x64\Lexilla.dll" CopyToOutputDirectory="PreserveNewest" Link="Lexilla.dll" />
     <None Include="..\..\native\win-x64\License.txt" CopyToOutputDirectory="PreserveNewest" Link="Scintilla-License.txt" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(NetTextSingleExecutable)' == 'true'">
+    <EmbeddedResource Include="..\..\native\win-x64\License.txt" LogicalName="NetText.Native.Scintilla-License.txt" />
+    <DirectPInvoke Include="__Internal!Scintilla_RegisterClasses;__Internal!CreateLexer" />
+    <NativeEditorLibrary Include="$(NativeEditorDirectory)\libscintilla.lib;$(NativeEditorDirectory)\liblexilla.lib" />
+    <NativeLibrary Include="@(NativeEditorLibrary)" />
+    <SdkNativeLibrary Include="gdi32.lib;imm32.lib" />
+  </ItemGroup>
+
+  <Target Name="BuildNativeEditor" BeforeTargets="LinkNative"
+          Condition="'$(NetTextSingleExecutable)' == 'true'"
+          Inputs="$(NativeEditorBuild)" Outputs="@(NativeEditorLibrary)">
+    <Error Condition="'$(RuntimeIdentifier)' != 'win-x64'" Text="The static NetText editor requires win-x64." />
+    <Exec Command="pwsh -NoProfile -File &quot;$(NativeEditorBuild)&quot; -OutputDirectory &quot;$(NativeEditorDirectory)&quot;" />
+  </Target>
 
 </Project>

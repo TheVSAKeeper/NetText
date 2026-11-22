@@ -1,5 +1,6 @@
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text.Json.Serialization;
 using Microsoft.Win32.SafeHandles;
 
@@ -35,6 +36,8 @@ public sealed record FileStamp(FileIdentity Identity, ulong Length, DateTime? Mo
 
 public sealed record LogObservation(FileStamp Stamp, byte[] Head, byte[] Tail);
 
+public sealed record LogFingerprint(DateTime? ModifiedUtc, string Hash);
+
 public sealed class LogBookmark
 {
     [JsonPropertyName("identity")]
@@ -55,8 +58,54 @@ public sealed class LogBookmark
     [JsonPropertyName("follow_end")]
     public bool FollowEnd { get; set; }
 
+    [JsonPropertyName("index_opt_in"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? IndexOptIn { get; set; }
+
+    [JsonPropertyName("edit_pages"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool EditPages { get; set; }
+
+    [JsonPropertyName("fingerprint"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public LogFingerprint? Fingerprint { get; set; }
+
     public bool CanRestore(FileStamp stamp) =>
         Identity is not null && Identity.Equals(stamp.Identity) && stamp.Length >= Size;
+
+    internal void Record(LogObservation observation)
+    {
+        Identity = observation.Stamp.Identity;
+        Size = observation.Stamp.Length;
+        Fingerprint = new LogFingerprint(observation.Stamp.ModifiedUtc, HashBoundary(observation.Head, observation.Tail));
+    }
+
+    internal bool CanRestore(SafeFileHandle file, LogObservation observation)
+    {
+        bool atStart = Offset == 0 && Hidden == 0;
+        if (Identity is null) return atStart;
+        if (!CanRestore(observation.Stamp)) return false;
+        if (Fingerprint is not { } saved) return atStart;
+
+        if (observation.Stamp.Length == Size)
+        {
+            if (saved.ModifiedUtc is { } before && observation.Stamp.ModifiedUtc is { } after && before != after) return false;
+            return saved.Hash == HashBoundary(observation.Head, observation.Tail);
+        }
+
+        int count = (int)Math.Min(Size, LogFile.WitnessBytes);
+        if (observation.Head.Length < count) return false;
+        Span<byte> tail = stackalloc byte[LogFile.WitnessBytes];
+        if (LogIo.ReadAt(file, Size - (ulong)count, tail[..count]) != count) return false;
+        return saved.Hash == HashBoundary(observation.Head.AsSpan(0, count), tail[..count]);
+    }
+
+    private static string HashBoundary(ReadOnlySpan<byte> head, ReadOnlySpan<byte> tail)
+    {
+        Span<byte> combined = stackalloc byte[LogFile.WitnessBytes * 2];
+        head.CopyTo(combined);
+        tail.CopyTo(combined[head.Length..]);
+        return Convert.ToHexString(SHA256.HashData(combined[..(head.Length + tail.Length)]));
+    }
+
+    public LogBookmark Copy() => (LogBookmark)MemberwiseClone();
 }
 
 public static unsafe partial class LogFile

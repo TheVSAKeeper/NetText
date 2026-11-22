@@ -1,4 +1,4 @@
-using NetText.Core;
+﻿using NetText.Core;
 using Xunit;
 
 namespace NetText.Tests;
@@ -74,6 +74,102 @@ public sealed class JsonFormatTests
         {
             try { File.Delete(tmp); } catch { }
         }
+    }
+
+    [Fact]
+    public void FastUtf16FormatterMatchesUtf8EngineAndFallbacksOnAllEdgeCases()
+    {
+        string[] validCases =
+        [
+            "{}",
+            "[]",
+            "true",
+            "false",
+            "null",
+            "\"x\"",
+            "0",
+            "-0.00",
+            "1e9000",
+            "0e+0",
+            "-0.5E-2",
+            "{\"z\":1,\"a\":[true,false,null,{},[]],\"z\":-0.00}",
+            "{\"ru\":\"Привет 🙂\",\"esc\":\"\\\"\\\\\\/\\b\\f\\n\\r\\t\\u2603\\uD83D\\uDE42\"}",
+            "{\"k\":1}\n",
+            "{\"k\":1}\r\n",
+            new string('[', 40) + "1" + new string(']', 40),
+            new string('[', JsonFormat.MaxIndentDepth) + new string(']', JsonFormat.MaxIndentDepth),
+        ];
+
+        string[] newlines = ["\n", "\r\n", "\r\n--", "\n          "];
+        foreach (var nl in newlines)
+        {
+            foreach (var input in validCases)
+            {
+                Assert.True(JsonFormat.TryFormat(input, nl, out var actual, out var actualErr), actualErr);
+                Assert.True(
+                    JsonFormat.TryFormatUtf8(
+                        System.Text.Encoding.UTF8.GetBytes(input),
+                        System.Text.Encoding.UTF8.GetBytes(nl),
+                        out var expectedBytes,
+                        out var expectedErr),
+                    expectedErr);
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(expectedBytes), actual);
+            }
+        }
+
+        Assert.True(JsonFormat.TryFormat("[0]", "\uD800", out var loneNlActual, out var loneNlErr), loneNlErr);
+        Assert.True(JsonFormat.TryFormatUtf8("[0]"u8, System.Text.Encoding.UTF8.GetBytes("\uD800"), out var loneNlExpected, out _));
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(loneNlExpected), loneNlActual);
+
+        string fallbackSurrogate = "\"a\uD800b\"";
+        Assert.True(JsonFormat.TryFormat(fallbackSurrogate, "\n", out var repActual, out var repErr), repErr);
+        Assert.True(
+            JsonFormat.TryFormatUtf8(
+                System.Text.Encoding.UTF8.GetBytes(fallbackSurrogate),
+                "\n"u8,
+                out var repExpected,
+                out _));
+        Assert.Equal(System.Text.Encoding.UTF8.GetString(repExpected), repActual);
+
+        string[] invalidCases =
+        [
+            "",
+            "   \r\n",
+            "01",
+            "-01",
+            "1.",
+            "1e+",
+            "[1,]",
+            "{\"a\":1,}",
+            "\"a\nb\"",
+            "\"a\u001Fb\"",
+            "\"\\a\"",
+            "\"\\u123G\"",
+            "\"\\uD800\"",
+            "\"\\uDC00\"",
+            "\"\\uD800\\u0041\"",
+            "\u00A0{}",
+            "\uFEFF{}",
+            "{} 1",
+            "true false",
+            new string('[', JsonFormat.MaxIndentDepth + 1) + new string(']', JsonFormat.MaxIndentDepth + 1),
+        ];
+
+        foreach (var input in invalidCases)
+        {
+            Assert.False(JsonFormat.TryFormat(input, "\n", out var actualOut, out var actualErr));
+            Assert.Equal("", actualOut);
+            Assert.False(JsonFormat.TryFormatUtf8(System.Text.Encoding.UTF8.GetBytes(input), "\n"u8, out _, out var expectedErr));
+            Assert.Equal(expectedErr, actualErr);
+        }
+
+        Assert.False(
+            JsonFormat.TryFormat(
+                new string('[', JsonFormat.MaxIndentDepth + 1) + new string(']', JsonFormat.MaxIndentDepth + 1),
+                "\n",
+                out _,
+                out var depthErr));
+        Assert.Contains("Глубина вложенности JSON превышает 1024", depthErr);
     }
 }
 

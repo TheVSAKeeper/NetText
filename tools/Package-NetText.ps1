@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$PublishDirectory,
     [string]$ReadmePath,
@@ -15,15 +15,8 @@ $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repositoryRoot 'src\NetText\NetText.csproj'
 
-if ($Publish) {
-    dotnet publish $projectPath -c Release -r win-x64 | Out-Host
-    if ($LASTEXITCODE -ne 0) {
-        throw 'NetText publish failed'
-    }
-}
-
 if (-not $PublishDirectory) {
-    $PublishDirectory = Join-Path $repositoryRoot 'src\NetText\bin\Release\net11.0-windows\win-x64\publish'
+    $PublishDirectory = Join-Path $repositoryRoot 'publish'
 }
 if (-not $ReadmePath) {
     $ReadmePath = Join-Path $repositoryRoot 'README.md'
@@ -40,18 +33,30 @@ if (-not $OutputDirectory) {
 
 $PublishDirectory = [IO.Path]::GetFullPath($PublishDirectory)
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
+if ($Publish) {
+    dotnet publish $projectPath -c Release -r win-x64 -o $PublishDirectory | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        throw 'NetText publish failed'
+    }
+}
+
 $licenseInPublish = Join-Path $PublishDirectory 'Scintilla-License.txt'
 $licenseFallback = Join-Path $repositoryRoot 'native\win-x64\License.txt'
 $licensePath = if (Test-Path -LiteralPath $licenseInPublish -PathType Leaf) { $licenseInPublish } else { $licenseFallback }
 
 $entries = [ordered]@{
     'NetText.exe' = [IO.Path]::GetFullPath((Join-Path $PublishDirectory 'NetText.exe'))
-    'Scintilla.dll' = [IO.Path]::GetFullPath((Join-Path $PublishDirectory 'Scintilla.dll'))
-    'Lexilla.dll' = [IO.Path]::GetFullPath((Join-Path $PublishDirectory 'Lexilla.dll'))
     'Scintilla-License.txt' = [IO.Path]::GetFullPath($licensePath)
     'README.md' = [IO.Path]::GetFullPath($ReadmePath)
     'docs/comparison.md' = [IO.Path]::GetFullPath($ComparisonPath)
     'docs/comparison-raw.json' = [IO.Path]::GetFullPath($ComparisonRawJsonPath)
+}
+
+$scintilla = Join-Path $PublishDirectory 'Scintilla.dll'
+$lexilla = Join-Path $PublishDirectory 'Lexilla.dll'
+if (!$Publish -and ((Test-Path -LiteralPath $scintilla) -or (Test-Path -LiteralPath $lexilla))) {
+    $entries['Scintilla.dll'] = $scintilla
+    $entries['Lexilla.dll'] = $lexilla
 }
 
 foreach ($file in $entries.Values) {

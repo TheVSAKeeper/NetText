@@ -1,4 +1,4 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -14,7 +14,8 @@ public sealed record TrimPlan(
     ulong BoundaryOffset,
     TextEncoding Encoding,
     DateTime ModifiedUtc,
-    TrimFileIdentity Identity);
+    TrimFileIdentity Identity,
+    ulong RemovedLines = 0);
 
 public sealed record TrimOutcome(
     string BackupPath,
@@ -73,7 +74,26 @@ public static unsafe partial class LogTrim
         Action<ulong, ulong>? progress = null)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
-        return PrepareFromStream(path, stream, percent, encoding, ct, progress);
+        var plan = PrepareFromStream(path, stream, percent, encoding, ct, progress);
+        if (plan.RemovableBytes == 0) return plan;
+        var index = new LineIndex();
+        while (index.ScannedTo < plan.BoundaryOffset)
+        {
+            ulong end = Math.Min(plan.BoundaryOffset, index.ScannedTo + 64 * 1024 * 1024);
+            if (index.Advance(stream.SafeFileHandle, encoding, end, ct) == 0) break;
+            progress?.Invoke(index.ScannedTo, plan.BoundaryOffset);
+        }
+        ulong lines = index.LineCount - 1;
+        if (plan.BoundaryOffset == plan.OriginalSize)
+        {
+            int unit = TextFormat.UnitSize(encoding);
+            Span<byte> suffix = stackalloc byte[2];
+            if (plan.RemovableBytes >= (ulong)unit &&
+                LogIo.ReadAt(stream.SafeFileHandle, plan.BoundaryOffset - (ulong)unit, suffix[..unit]) == unit &&
+                !LogIo.IsNewlineUnit(suffix[..unit], encoding) && !LogIo.IsCarriageReturnUnit(suffix[..unit], encoding))
+                lines++;
+        }
+        return plan with { RemovedLines = lines };
     }
 
     public static TrimPlan HiddenStartWithProgress(

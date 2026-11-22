@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0-windows</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PublishAot>true</PublishAot>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <NetTextProject Condition="'$(NetTextProject)' == ''">..\..\src\NetText\NetText.csproj</NetTextProject>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RustVersion)' == '2.4.0'">
+    <DefineConstants>$(DefineConstants);RUSTTEXT_240</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(NetTextProject)" />
+    <Compile Include="$(RustSource)\src\RustText\Logs\LogDataReader.cs" Link="RustText\LogDataReader.cs" />
+    <Compile Include="$(RustSource)\src\RustText\Storage\DocumentFiles.cs" Link="RustText\DocumentFiles.cs" />
+    <Compile Include="$(RustSource)\src\RustText\Editor\TextOperations.cs" Link="RustText\TextOperations.cs" />
+    <Compile Include="$(RustSource)\src\RustText\Editor\ReplacementLineEndings.cs" Link="RustText\ReplacementLineEndings.cs"
+             Condition="'$(RustVersion)' == '2.4.0'" />
+  </ItemGroup>
+</Project>

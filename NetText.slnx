@@ -1,2 +1,4 @@
-<Solution>
+﻿<Solution>
+  <Project Path="src/NetText/NetText.csproj" />
+  <Project Path="tests/NetText.Tests/NetText.Tests.csproj" />
 </Solution>

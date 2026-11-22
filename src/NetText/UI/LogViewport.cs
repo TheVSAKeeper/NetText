@@ -1,26 +1,36 @@
+﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using NetText.Core;
 using NetText.Native;
 
 namespace NetText.UI;
 
-internal sealed unsafe class LogViewport : IDisposable
+internal sealed unsafe partial class LogViewport : IDisposable
 {
     internal const int TabWidth = 4;
     private const nuint DragScrollTimerId = 1;
     private const uint DragScrollIntervalMs = 50;
+    private const uint WM_SETCURSOR = 0x0020;
+    private const int SB_ENDSCROLL = 8;
 
     private readonly record struct VisualLine(int RowIndex, int CharStart, int CharLen);
+    private readonly record struct UrlSpan(int RawStart, int RawEnd, int ExpStart, int ExpEnd, string Url);
     internal readonly record struct TextPos(int Row, int Col);
+
+    [GeneratedRegex(@"(?:https?://|mailto:)[^\s<>""'()\[\]{}]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex UrlRegex();
 
     private static bool _classRegistered;
 
     private readonly nint _hwnd;
-    private readonly nint _bgBrush;
-    private readonly nint _selBrush;
-    private readonly nint _searchBrush;
+    private nint _bgBrush;
+    private nint _selBrush;
+    private nint _searchBrush;
+    private ThemeKind _paintedTheme;
     private readonly GdiBackBuffer _backBuffer = new();
     private readonly Action<LogDestination> _onNavigate;
     private readonly Action<float>? _onZoom;
@@ -36,7 +46,37 @@ internal sealed unsafe class LogViewport : IDisposable
 
     private string[] _rows = [];
     private string[] _displayRows = [];
+    private LogLevel[] _rowLevels = [];
+    private UrlSpan[][] _rowLinks = [];
+    private ulong _prevNextOffset = ulong.MaxValue;
+    private LogLevel _prevTailLevel = LogLevel.Other;
+    private HashSet<string>? _visitedLinks;
     private Regex? _highlightRegex;
+    private ulong? _firstLine;
+    private bool _outlineFirst;
+    private ulong[] _rowOffsets = [];
+    private List<LogRow> _pageRows = [];
+    private int[] _rowFragments = [];
+    private TextEncoding _pageEncoding;
+    public ulong? VisibleLogOffset => (uint)_topVisualLine < (uint)_visualCount &&
+        (uint)_visualLines[_topVisualLine].RowIndex < (uint)_rowOffsets.Length ? _rowOffsets[_visualLines[_topVisualLine].RowIndex] : null;
+    private int LeftGutter
+    {
+        get
+        {
+            int digits = _firstLine is { } fl
+                ? LineNumbers.Format((long)(fl + (ulong)Math.Max(0, _rows.Length))).Length
+                : 3;
+            return S(14) + _charWidthPx * Math.Max(4, digits + 1);
+        }
+    }
+    public Action? Focused { get; set; }
+    public Action? Scrolled { get; set; }
+    public Action<string>? LinkOpened { get; set; }
+    private bool _verticalScrollbar = true;
+    private bool _draggingVScroll;
+    private int _lastMouseX;
+    private int _lastMouseY;
     private VisualLine[] _visualLines = [];
     private int _visualCount;
     private int _maxColsNoWrap;
@@ -71,9 +111,7 @@ internal sealed unsafe class LogViewport : IDisposable
         _wrap = wrap;
         _onNavigate = onNavigate;
         _onZoom = onZoom;
-        _bgBrush = Win32.CreateSolidBrush(ThemePalette.Bg);
-        _selBrush = Win32.CreateSolidBrush(ThemePalette.SelectionBg);
-        _searchBrush = Win32.CreateSolidBrush(ThemePalette.SearchMatchBg);
+        EnsureThemeBrushes(force: true);
         _selfHandle = GCHandle.Alloc(this);
 
         EnsureClassRegistered(hInstance);
@@ -81,7 +119,7 @@ internal sealed unsafe class LogViewport : IDisposable
             0,
             "NetTextLogViewport",
             "",
-            Win32.WS_CHILD | Win32.WS_CLIPCHILDREN | Win32.WS_TABSTOP | Win32.WS_VSCROLL | Win32.WS_HSCROLL,
+            Win32.WS_CHILD | Win32.WS_CLIPCHILDREN | Win32.WS_TABSTOP | Win32.WS_VSCROLL,
             0, 0, 100, 100,
             parent,
             0,
@@ -136,9 +174,39 @@ internal sealed unsafe class LogViewport : IDisposable
         Win32.InvalidateRect(_hwnd, null, false);
     }
 
-    public void SetUtf8Text(ReadOnlySpan<byte> utf8, bool scrollToBottom = false)
+    public void SetVisitedLinks(HashSet<string>? visitedLinks)
     {
-        string text = utf8.IsEmpty ? "" : Encoding.UTF8.GetString(utf8);
+        _visitedLinks = visitedLinks;
+        Win32.InvalidateRect(_hwnd, null, false);
+    }
+
+    public void RefreshTheme()
+    {
+        EnsureThemeBrushes(force: true);
+        Win32.InvalidateRect(_hwnd, null, false);
+    }
+
+    private void EnsureThemeBrushes(bool force = false)
+    {
+        if (!force && _bgBrush != 0 && _paintedTheme == ThemePalette.CurrentKind) return;
+        if (_bgBrush != 0) Win32.DeleteObject(_bgBrush);
+        if (_selBrush != 0) Win32.DeleteObject(_selBrush);
+        if (_searchBrush != 0) Win32.DeleteObject(_searchBrush);
+        _bgBrush = Win32.CreateSolidBrush(ThemePalette.Bg);
+        _selBrush = Win32.CreateSolidBrush(ThemePalette.SelectionBg);
+        _searchBrush = Win32.CreateSolidBrush(ThemePalette.SearchMatchBg);
+        _paintedTheme = ThemePalette.CurrentKind;
+    }
+
+    public void SetPage(LogPage page, TextEncoding encoding, ulong? firstLine, bool scrollToBottom, bool outlineFirst)
+    {
+        string text = LogViewerState.AssemblePageText(page.Rows);
+        _firstLine = firstLine;
+        _outlineFirst = outlineFirst;
+        _pageRows = page.Rows;
+        _pageEncoding = encoding;
+        _rowFragments = Enumerable.Range(0, page.Rows.Count).Where(i => i == 0 || page.Rows[i - 1].Terminated).ToArray();
+        _rowOffsets = _rowFragments.Select(i => page.Rows[i].Start).ToArray();
         _rows = text.Length == 0 ? [] : text.Split('\n');
         for (int i = 0; i < _rows.Length; i++)
         {
@@ -149,9 +217,39 @@ internal sealed unsafe class LogViewport : IDisposable
         }
 
         _displayRows = new string[_rows.Length];
+        _rowLevels = new LogLevel[_rows.Length];
+        _rowLinks = new UrlSpan[_rows.Length][];
+
+        bool hasFilteredLevels = LogViewerState.TryGetFilteredLevels(page, out var filteredLevels);
+        LogLevel carried = page.Rows.Count > 0 && page.Rows[0].Start == _prevNextOffset ? _prevTailLevel : LogLevel.Other;
+
         for (int i = 0; i < _rows.Length; i++)
         {
             _displayRows[i] = ExpandTabs(_rows[i], TabWidth);
+            if (hasFilteredLevels && filteredLevels is not null && i < filteredLevels.Length)
+            {
+                _rowLevels[i] = filteredLevels[i];
+            }
+            else if (i == 0 && _rowFragments.Length > 0 && page.Rows[_rowFragments[0]].Continues)
+            {
+                _rowLevels[i] = carried;
+            }
+            else
+            {
+                _rowLevels[i] = LogLevels.Classify(_rows[i]);
+            }
+            _rowLinks[i] = ExtractUrls(_rows[i]);
+        }
+
+        if (!hasFilteredLevels)
+        {
+            _prevNextOffset = page.NextOffset;
+            _prevTailLevel = _rowLevels.Length > 0 ? _rowLevels[^1] : LogLevel.Other;
+        }
+        else
+        {
+            _prevNextOffset = ulong.MaxValue;
+            _prevTailLevel = LogLevel.Other;
         }
 
         _topVisualLine = 0;
@@ -167,6 +265,87 @@ internal sealed unsafe class LogViewport : IDisposable
             _topVisualLine = Math.Max(0, _visualCount - visibleRows);
             UpdateScrollbars(rc);
         }
+        Win32.InvalidateRect(_hwnd, null, false);
+    }
+
+    public (ulong Start, ulong End, int FirstRow, int LastRow)? VisibleRange
+    {
+        get
+        {
+            if (_visualCount == 0) return _pageRows.Count == 0 ? null : (_pageRows[0].Start, _pageRows[^1].End, 0, 0);
+            Win32.RECT rc;
+            Win32.GetClientRect(_hwnd, &rc);
+            int visible = Math.Max(1, (rc.Height - S(4) + _lineHeightPx - 1) / _lineHeightPx);
+            int bottom = Math.Min(_visualCount, _topVisualLine + visible) - 1;
+            var first = _visualLines[_topVisualLine];
+            var last = _visualLines[bottom];
+            return (ByteOffsetAt(first, false), ByteOffsetAt(last, true), first.RowIndex, last.RowIndex);
+        }
+    }
+
+    private ulong ByteOffsetAt(VisualLine visual, bool end)
+    {
+        int row = visual.RowIndex;
+        int first = _rowFragments[row];
+        int after = row + 1 < _rowFragments.Length ? _rowFragments[row + 1] : _pageRows.Count;
+        int column = visual.CharStart + (end ? visual.CharLen : 0);
+        if (column == 0 && !end) return _pageRows[first].Start;
+        if (column >= _displayRows[row].Length) return _pageRows[after - 1].End;
+
+        int raw = ExpandedColToRaw(_rows[row], column);
+        for (int i = first; i < after; i++)
+        {
+            var fragment = _pageRows[i];
+            if (raw < fragment.Text.Length)
+            {
+                int bytes = _pageEncoding switch
+                {
+                    TextEncoding.Utf16Le or TextEncoding.Utf16Be => raw * 2,
+                    TextEncoding.Windows1251 => raw,
+                    _ => System.Text.Encoding.UTF8.GetByteCount(fragment.Text.AsSpan(0, raw)),
+                };
+                return Math.Min(fragment.End, fragment.Start + (ulong)bytes);
+            }
+            raw -= fragment.Text.Length;
+        }
+        return _pageRows[after - 1].End;
+    }
+
+    public void SetVerticalScrollbar(bool visible)
+    {
+        _verticalScrollbar = visible;
+        Win32.ShowScrollBar(_hwnd, Win32.SB_VERT, visible);
+        RebuildVisualLayout();
+    }
+
+    private int VisibleColumns(int width) => Math.Max(1, (width - LeftGutter - S(7)) / _charWidthPx);
+
+    public ScrollRange HorizontalRange
+    {
+        get
+        {
+            if (_wrap) return default;
+            Win32.RECT rc;
+            Win32.GetClientRect(_hwnd, &rc);
+            return ScrollRange.FromViewport((ulong)_leftChar, (ulong)VisibleColumns(rc.Width), (ulong)_maxColsNoWrap);
+        }
+    }
+
+    public void SetHorizontalOffset(int offset)
+    {
+        Win32.RECT rc;
+        Win32.GetClientRect(_hwnd, &rc);
+        _leftChar = Math.Clamp(offset, 0, Math.Max(0, _maxColsNoWrap - VisibleColumns(rc.Width)));
+        Scrolled?.Invoke();
+        Win32.InvalidateRect(_hwnd, null, false);
+    }
+
+    public void SetFirstLine(ulong? line, bool outlineFirst)
+    {
+        if (_firstLine == line && _outlineFirst == outlineFirst) return;
+        _firstLine = line;
+        _outlineFirst = outlineFirst;
+        RebuildVisualLayout();
         Win32.InvalidateRect(_hwnd, null, false);
     }
 
@@ -334,8 +513,7 @@ internal sealed unsafe class LogViewport : IDisposable
     {
         Win32.RECT rc;
         Win32.GetClientRect(_hwnd, &rc);
-        int padX = S(10);
-        int cols = Math.Max(8, (rc.Width - padX * 2) / Math.Max(1, _charWidthPx));
+        int cols = Math.Max(8, VisibleColumns(rc.Width));
 
         _visualCount = 0;
         _maxColsNoWrap = 0;
@@ -393,23 +571,9 @@ internal sealed unsafe class LogViewport : IDisposable
             nPage = (uint)visibleRows,
             nPos = _topVisualLine,
         };
-        Win32.SetScrollInfo(_hwnd, Win32.SB_VERT, &vsi, true);
-
-        int padX = S(10);
-        int visibleCols = Math.Max(1, (rc.Width - padX * 2) / _charWidthPx);
-        int hMax = _wrap ? 0 : Math.Max(0, _maxColsNoWrap - 1);
-        _leftChar = _wrap ? 0 : Math.Clamp(_leftChar, 0, Math.Max(0, _maxColsNoWrap - visibleCols));
-
-        var hsi = new Win32.SCROLLINFO
-        {
-            cbSize = (uint)Marshal.SizeOf<Win32.SCROLLINFO>(),
-            fMask = Win32.SIF_ALL,
-            nMin = 0,
-            nMax = hMax,
-            nPage = (uint)visibleCols,
-            nPos = _leftChar,
-        };
-        Win32.SetScrollInfo(_hwnd, Win32.SB_HORZ, &hsi, true);
+        if (_verticalScrollbar) Win32.SetScrollInfo(_hwnd, Win32.SB_VERT, &vsi, true);
+        _leftChar = _wrap ? 0 : Math.Clamp(_leftChar, 0, Math.Max(0, _maxColsNoWrap - VisibleColumns(rc.Width)));
+        Scrolled?.Invoke();
     }
 
     private static int MeasureSpanWidth(nint hdc, string text, int start, int length)
@@ -431,6 +595,7 @@ internal sealed unsafe class LogViewport : IDisposable
     private void Paint(nint hdc, Win32.RECT rc)
     {
         if (rc.Width <= 0 || rc.Height <= 0) return;
+        EnsureThemeBrushes();
 
         nint memDc = _backBuffer.Ensure(hdc, rc.Width, rc.Height);
         if (memDc == 0) return;
@@ -442,11 +607,13 @@ internal sealed unsafe class LogViewport : IDisposable
 
         try
         {
-            int padX = S(10);
+            int padX = LeftGutter;
             int padY = S(4);
             int maxVis = (rc.Height - padY) / _lineHeightPx + 1;
             var (selStart, selEnd) = OrderedSelection();
             var rx = _highlightRegex;
+            int accentWidth = Math.Max(2, S(2));
+            int bandLeft = Math.Max(0, padX - S(4));
 
             for (int i = 0; i < maxVis; i++)
             {
@@ -456,7 +623,40 @@ internal sealed unsafe class LogViewport : IDisposable
                 var vl = _visualLines[vi];
                 string rawRow = _rows[vl.RowIndex];
                 string dispRow = _displayRows[vl.RowIndex];
+                LogLevel level = (uint)vl.RowIndex < (uint)_rowLevels.Length ? _rowLevels[vl.RowIndex] : LogLevel.Other;
                 int y = padY + i * _lineHeightPx;
+
+                if (level != LogLevel.Other)
+                {
+                    uint accentColor = LevelColor(level);
+                    uint tintColor = BlendColor(ThemePalette.Bg, accentColor, 0.16);
+                    nint tintBrush = Win32.CreateSolidBrush(tintColor);
+                    var bandRc = new Win32.RECT { Left = bandLeft, Top = y, Right = rc.Width, Bottom = y + _lineHeightPx };
+                    Win32.FillRect(memDc, &bandRc, tintBrush);
+                    Win32.DeleteObject(tintBrush);
+
+                    nint barBrush = Win32.CreateSolidBrush(accentColor);
+                    var barRc = new Win32.RECT { Left = bandLeft, Top = y, Right = bandLeft + accentWidth, Bottom = y + _lineHeightPx };
+                    Win32.FillRect(memDc, &barRc, barBrush);
+                    Win32.DeleteObject(barBrush);
+                }
+
+                if (vl.CharStart == 0)
+                {
+                    var numberRect = new Win32.RECT { Left = 2, Right = padX - S(7), Top = y, Bottom = y + _lineHeightPx };
+                    Win32.SetTextColor(memDc, ThemePalette.Dim);
+                    string lineLabel = _firstLine is { } lineNumber
+                        ? LineNumbers.Format((long)(lineNumber + (ulong)vl.RowIndex))
+                        : "?";
+                    Win32.DrawTextW(memDc, lineLabel, -1, &numberRect,
+                        Win32.DT_RIGHT | Win32.DT_VCENTER | Win32.DT_SINGLELINE);
+                    Win32.SetTextColor(memDc, ThemePalette.Text);
+                }
+                if (_outlineFirst && vl.RowIndex == 0)
+                {
+                    var highlight = new Win32.RECT { Left = padX, Right = rc.Width, Top = y, Bottom = y + _lineHeightPx };
+                    Win32.FrameRect(memDc, &highlight, _searchBrush);
+                }
 
                 int skipCols = _wrap ? 0 : Math.Min(_leftChar, vl.CharLen);
                 int drawStart = vl.CharStart + skipCols;
@@ -500,11 +700,9 @@ internal sealed unsafe class LogViewport : IDisposable
 
                 if (drawLen > 0)
                 {
-                    var lineRect = new Win32.RECT { Left = padX, Top = y, Right = rc.Width - padX, Bottom = y + _lineHeightPx };
-                    fixed (char* pText = dispRow)
-                    {
-                        Win32.ExtTextOutW(memDc, padX, y + S(2), Win32.ETO_CLIPPED, &lineRect, pText + drawStart, (uint)drawLen, null);
-                    }
+                    var lineRect = new Win32.RECT { Left = padX, Top = y, Right = rc.Width, Bottom = y + _lineHeightPx };
+                    var links = (uint)vl.RowIndex < (uint)_rowLinks.Length ? _rowLinks[vl.RowIndex] : [];
+                    DrawLineWithLinks(memDc, dispRow, drawStart, drawLen, padX, y, lineRect, links);
                 }
             }
 
@@ -519,6 +717,141 @@ internal sealed unsafe class LogViewport : IDisposable
         finally
         {
             Win32.SelectObject(memDc, oldFont);
+        }
+    }
+
+    private void DrawLineWithLinks(nint memDc, string dispRow, int drawStart, int drawLen, int padX, int y, Win32.RECT clipRect, UrlSpan[] links)
+    {
+        int drawEnd = drawStart + drawLen;
+        if (links.Length == 0)
+        {
+            Win32.SetTextColor(memDc, ThemePalette.Text);
+            fixed (char* pText = dispRow)
+            {
+                Win32.ExtTextOutW(memDc, padX, y + S(2), Win32.ETO_CLIPPED, &clipRect, pText + drawStart, (uint)drawLen, null);
+            }
+            return;
+        }
+
+        int cursor = drawStart;
+        fixed (char* pText = dispRow)
+        {
+            foreach (var link in links)
+            {
+                if (link.ExpEnd <= cursor || link.ExpStart >= drawEnd) continue;
+                if (link.ExpStart > cursor)
+                {
+                    int segLen = link.ExpStart - cursor;
+                    int segX = padX + MeasureSpanWidth(memDc, dispRow, drawStart, cursor - drawStart);
+                    Win32.SetTextColor(memDc, ThemePalette.Text);
+                    Win32.ExtTextOutW(memDc, segX, y + S(2), Win32.ETO_CLIPPED, &clipRect, pText + cursor, (uint)segLen, null);
+                    cursor = link.ExpStart;
+                }
+
+                int linkStart = Math.Max(cursor, link.ExpStart);
+                int linkEnd = Math.Min(drawEnd, link.ExpEnd);
+                if (linkEnd > linkStart)
+                {
+                    int x0 = padX + MeasureSpanWidth(memDc, dispRow, drawStart, linkStart - drawStart);
+                    int x1 = padX + MeasureSpanWidth(memDc, dispRow, drawStart, linkEnd - drawStart);
+                    uint linkColor = _visitedLinks?.Contains(link.Url) == true ? ThemePalette.VisitedLink : ThemePalette.Link;
+                    Win32.SetTextColor(memDc, linkColor);
+                    Win32.ExtTextOutW(memDc, x0, y + S(2), Win32.ETO_CLIPPED, &clipRect, pText + linkStart, (uint)(linkEnd - linkStart), null);
+
+                    nint lineBrush = Win32.CreateSolidBrush(linkColor);
+                    int underlineY = Math.Min(y + _lineHeightPx - 2, y + _lineHeightPx - S(3));
+                    var uRc = new Win32.RECT { Left = x0, Top = underlineY, Right = x1, Bottom = underlineY + 1 };
+                    Win32.FillRect(memDc, &uRc, lineBrush);
+                    Win32.DeleteObject(lineBrush);
+                    cursor = linkEnd;
+                }
+            }
+
+            if (cursor < drawEnd)
+            {
+                int remX = padX + MeasureSpanWidth(memDc, dispRow, drawStart, cursor - drawStart);
+                Win32.SetTextColor(memDc, ThemePalette.Text);
+                Win32.ExtTextOutW(memDc, remX, y + S(2), Win32.ETO_CLIPPED, &clipRect, pText + cursor, (uint)(drawEnd - cursor), null);
+            }
+        }
+    }
+
+    private static uint LevelColor(LogLevel level) => level switch
+    {
+        LogLevel.Fatal or LogLevel.Error => ThemePalette.Danger,
+        LogLevel.Warning => ThemePalette.Warning,
+        LogLevel.Info => ThemePalette.Success,
+        LogLevel.Debug or LogLevel.Trace => ThemePalette.Muted,
+        _ => ThemePalette.Text,
+    };
+
+    private static uint BlendColor(uint bg, uint fg, double alpha)
+    {
+        byte r = (byte)Math.Round((bg & 0xFF) * (1.0 - alpha) + (fg & 0xFF) * alpha);
+        byte g = (byte)Math.Round(((bg >> 8) & 0xFF) * (1.0 - alpha) + ((fg >> 8) & 0xFF) * alpha);
+        byte b = (byte)Math.Round(((bg >> 16) & 0xFF) * (1.0 - alpha) + ((fg >> 16) & 0xFF) * alpha);
+        return (uint)(r | (g << 8) | (b << 16));
+    }
+
+    private static UrlSpan[] ExtractUrls(string rawRow)
+    {
+        if (string.IsNullOrEmpty(rawRow) ||
+            (!rawRow.Contains("http", StringComparison.OrdinalIgnoreCase) &&
+             !rawRow.Contains("mailto:", StringComparison.OrdinalIgnoreCase)))
+        {
+            return [];
+        }
+
+        List<UrlSpan>? list = null;
+        foreach (ValueMatch m in UrlRegex().EnumerateMatches(rawRow))
+        {
+            int start = m.Index;
+            int len = m.Length;
+            while (len > 0 && rawRow[start + len - 1] is '.' or ',' or ';' or ':' or '!' or '?')
+            {
+                len--;
+            }
+            if (len <= 0) continue;
+            string url = rawRow.Substring(start, len);
+            int exp0 = RawColToExpanded(rawRow, start);
+            int exp1 = RawColToExpanded(rawRow, start + len);
+            list ??= [];
+            list.Add(new UrlSpan(start, start + len, exp0, exp1, url));
+        }
+        return list is null ? [] : [.. list];
+    }
+
+    private string? UrlAtPoint(int x, int y)
+    {
+        if (_visualCount == 0 || x < LeftGutter) return null;
+        var pos = HitTest(x, y);
+        if ((uint)pos.Row >= (uint)_rowLinks.Length) return null;
+        foreach (var link in _rowLinks[pos.Row])
+        {
+            if (pos.Col >= link.RawStart && pos.Col < link.RawEnd)
+            {
+                return link.Url;
+            }
+        }
+        return null;
+    }
+
+    private void OpenUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeMailto))
+        {
+            return;
+        }
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+            _visitedLinks?.Add(url);
+            LinkOpened?.Invoke(url);
+            Win32.InvalidateRect(_hwnd, null, false);
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
         }
     }
 
@@ -539,7 +872,7 @@ internal sealed unsafe class LogViewport : IDisposable
 
         int drawStart = vl.CharStart + (_wrap ? 0 : Math.Min(_leftChar, vl.CharLen));
         int drawLen = vl.CharLen - (_wrap ? 0 : Math.Min(_leftChar, vl.CharLen));
-        int targetPx = x - S(10);
+        int targetPx = x - LeftGutter;
 
         int expCol;
         if (targetPx <= 0 || drawLen <= 0)
@@ -668,6 +1001,9 @@ internal sealed unsafe class LogViewport : IDisposable
     {
         switch (msg)
         {
+            case Win32.WM_SETFOCUS:
+                Focused?.Invoke();
+                break;
             case Win32.WM_PAINT:
             {
                 Win32.PAINTSTRUCT ps;
@@ -731,19 +1067,41 @@ internal sealed unsafe class LogViewport : IDisposable
                 int next = _topVisualLine;
                 switch (code)
                 {
-                    case Win32.SB_LINEUP: next--; break;
-                    case Win32.SB_LINEDOWN: next++; break;
-                    case Win32.SB_PAGEUP: next -= visibleRows; break;
-                    case Win32.SB_PAGEDOWN: next += visibleRows; break;
+                    case Win32.SB_LINEUP:
+                        if (_topVisualLine == 0) { _onNavigate(LogDestination.Previous); return 0; }
+                        next--;
+                        break;
+                    case Win32.SB_LINEDOWN:
+                        if (_topVisualLine >= maxTop) { _onNavigate(LogDestination.Next); return 0; }
+                        next++;
+                        break;
+                    case Win32.SB_PAGEUP:
+                        if (_topVisualLine == 0) { _onNavigate(LogDestination.Previous); return 0; }
+                        next -= visibleRows;
+                        break;
+                    case Win32.SB_PAGEDOWN:
+                        if (_topVisualLine >= maxTop) { _onNavigate(LogDestination.Next); return 0; }
+                        next += visibleRows;
+                        break;
                     case Win32.SB_TOP: next = 0; break;
                     case Win32.SB_BOTTOM: next = maxTop; break;
                     case Win32.SB_THUMBTRACK:
+                        _draggingVScroll = true;
+                        goto case Win32.SB_THUMBPOSITION;
                     case Win32.SB_THUMBPOSITION:
                     {
                         var si = new Win32.SCROLLINFO { cbSize = (uint)Marshal.SizeOf<Win32.SCROLLINFO>(), fMask = Win32.SIF_TRACKPOS };
                         if (Win32.GetScrollInfo(_hwnd, Win32.SB_VERT, &si)) next = si.nTrackPos;
                         break;
                     }
+                    case SB_ENDSCROLL:
+                        if (_draggingVScroll)
+                        {
+                            _draggingVScroll = false;
+                            if (_topVisualLine == 0) { _onNavigate(LogDestination.Previous); return 0; }
+                            if (_topVisualLine >= maxTop) { _onNavigate(LogDestination.Next); return 0; }
+                        }
+                        break;
                 }
                 _topVisualLine = Math.Clamp(next, 0, maxTop);
                 UpdateScrollbars(rc);
@@ -756,7 +1114,7 @@ internal sealed unsafe class LogViewport : IDisposable
                 int code = (int)(wParam & 0xFFFF);
                 Win32.RECT rc;
                 Win32.GetClientRect(_hwnd, &rc);
-                int visibleCols = Math.Max(1, (rc.Width - S(20)) / _charWidthPx);
+                int visibleCols = VisibleColumns(rc.Width);
                 int maxLeft = Math.Max(0, _maxColsNoWrap - visibleCols);
                 int next = _leftChar;
                 switch (code)
@@ -784,6 +1142,12 @@ internal sealed unsafe class LogViewport : IDisposable
                 Win32.SetFocus(_hwnd);
                 int x = Win32.GetXParam(lParam);
                 int y = Win32.GetYParam(lParam);
+                if (Win32.IsKeyDown(Win32.VK_CONTROL) && Win32.IsKeyDown(Win32.VK_SHIFT) &&
+                    UrlAtPoint(x, y) is { } clickedUrl)
+                {
+                    OpenUrl(clickedUrl);
+                    return 0;
+                }
                 uint now = unchecked((uint)Environment.TickCount64);
                 bool streak = unchecked(now - _lastClickTick) <= 550 &&
                               Math.Abs(x - _lastClickX) <= 4 &&
@@ -828,14 +1192,26 @@ internal sealed unsafe class LogViewport : IDisposable
             }
 
             case Win32.WM_MOUSEMOVE:
+                _lastMouseX = Win32.GetXParam(lParam);
+                _lastMouseY = Win32.GetYParam(lParam);
                 if (_selecting)
                 {
-                    _dragX = Win32.GetXParam(lParam);
-                    _dragY = Win32.GetYParam(lParam);
+                    _dragX = _lastMouseX;
+                    _dragY = _lastMouseY;
                     _caret = HitTest(_dragX, _dragY);
                     Win32.InvalidateRect(_hwnd, null, false);
                 }
                 return 0;
+
+            case WM_SETCURSOR:
+                if ((lParam & 0xFFFF) == 1 &&
+                    Win32.IsKeyDown(Win32.VK_CONTROL) && Win32.IsKeyDown(Win32.VK_SHIFT) &&
+                    UrlAtPoint(_lastMouseX, _lastMouseY) is not null)
+                {
+                    Win32.SetCursor(Win32.LoadCursorW(0, (nint)Win32.IDC_HAND));
+                    return 1;
+                }
+                break;
 
             case Win32.WM_TIMER:
                 if (wParam == DragScrollTimerId && _selecting)

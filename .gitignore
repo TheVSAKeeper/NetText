@@ -1,11 +1,10 @@
-bin/
+﻿bin/
 obj/
 publish/
 dist/
 artifacts/
 .vs/
 .idea/
-.kc/
 TestResults/
 native/win-x64/*.dll
 *.user
